@@ -17,7 +17,6 @@ const STEPS = [
 
 export const WizardStepIndicator: React.FC<WizardStepIndicatorProps> = ({ currentStep }) => {
   const currentStepData = STEPS.find((s) => s.id === currentStep) || STEPS[0];
-  const progressPercent = Math.min(100, Math.max(0, (currentStep / STEPS.length) * 100));
 
   return (
     <View style={styles.container}>
@@ -29,11 +28,6 @@ export const WizardStepIndicator: React.FC<WizardStepIndicatorProps> = ({ curren
         <Text style={styles.stepCurrentTitle}>
           {currentStepData.label} ({currentStepData.en})
         </Text>
-      </View>
-
-      {/* Progress Track */}
-      <View style={styles.progressBarTrack}>
-        <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
       </View>
 
       {/* Step Nodes Row */}
@@ -125,22 +119,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.foreground,
   },
-  progressBarTrack: {
-    height: 4,
-    backgroundColor: Colors.muted,
-    borderRadius: Radius.full,
-    overflow: 'hidden',
-    marginBottom: Spacing.xs,
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.full,
-  },
   stepsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: Spacing.xs,
   },
   stepNode: {
     alignItems: 'center',
