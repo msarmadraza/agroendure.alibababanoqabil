@@ -110,9 +110,9 @@ export async function imageUriToBase64(uri: string): Promise<string> {
   }
 
   try {
-    const FileSystem = await import('expo-file-system');
+    const FileSystem = require('expo-file-system');
     const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
+      encoding: FileSystem.EncodingType?.Base64 || 'base64',
     });
     return `data:image/jpeg;base64,${base64}`;
   } catch {

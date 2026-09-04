@@ -16,6 +16,7 @@
   ],
   "exclude": [
     "node_modules",
+    "supabase/functions",
     "agroendure-vite-legacy",
     "agroendure-expo-legacy",
     "agoroendure-antigravity-repo"

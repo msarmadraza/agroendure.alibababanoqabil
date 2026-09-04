@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
-import { Camera, UploadCloud, ShieldCheck, RefreshCw } from 'lucide-react-native';
+import { Camera, UploadCloud, ShieldCheck, RefreshCw, CheckCircle2, CreditCard } from 'lucide-react-native';
+import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
 
 interface CNICUploadBoxProps {
   imageUri: string | null;
@@ -44,38 +45,52 @@ export const CNICUploadBox: React.FC<CNICUploadBoxProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.guidanceBox}>
-        <ShieldCheck size={18} color="#0F5132" />
+        <View style={styles.guidanceIconWrapper}>
+          <ShieldCheck size={18} color={Colors.primary} />
+        </View>
         <Text style={styles.guidanceText}>
-          Make sure the CNIC is clearly visible, well-lit, and all text can be read easily.
+          شناختی کارڈ واضح اور سیدھا رکھیں۔ چاروں کونے نظر آنے چاہییں۔
+          {'\n'}
+          <Text style={styles.guidanceSub}>Make sure CNIC is well-lit, not blurry, and fully visible.</Text>
         </Text>
       </View>
 
       {imageUri ? (
         <View style={styles.previewContainer}>
-          <Image source={{ uri: imageUri }} style={styles.previewImage} />
+          <View style={styles.imageCard}>
+            <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="cover" />
+            <View style={styles.verifiedChip}>
+              <CheckCircle2 size={15} color={Colors.white} />
+              <Text style={styles.verifiedChipText}>تصویر منتخب ہو گئی</Text>
+            </View>
+          </View>
+
           <TouchableOpacity style={styles.retakeBtn} onPress={onClearImage} activeOpacity={0.8}>
-            <RefreshCw size={14} color="#1b4332" />
-            <Text style={styles.retakeText}>Retake / Choose Different Photo</Text>
+            <RefreshCw size={15} color={Colors.primary} />
+            <Text style={styles.retakeText}>تبدیل کریں / Choose Different Photo</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <View style={styles.uploadArea}>
-          <Text style={styles.uploadTitle}>Pakistani CNIC (Front Side)</Text>
-          <Text style={styles.uploadSub}>پاکستانی شناختی کارڈ (سامنے والا حصہ)</Text>
+          <View style={styles.cardHeaderStrip}>
+            <CreditCard size={18} color={Colors.primary} />
+            <Text style={styles.cardHeaderStripText}>PAKISTAN NATIONAL IDENTITY CARD</Text>
+          </View>
+
+          <View style={styles.cardCenter}>
+            <Text style={styles.uploadTitle}>Pakistani CNIC (Front Side)</Text>
+            <Text style={styles.uploadSub}>پاکستانی شناختی کارڈ (سامنے والا حصہ)</Text>
+          </View>
 
           <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.actionBtn} onPress={handleOpenFilePicker} activeOpacity={0.85}>
-              <Camera size={22} color="#FFFFFF" />
-              <Text style={styles.actionBtnText}>Take Photo</Text>
+            <TouchableOpacity style={styles.primaryActionBtn} onPress={handleOpenFilePicker} activeOpacity={0.85}>
+              <Camera size={20} color={Colors.white} />
+              <Text style={styles.primaryActionBtnText}>Take Photo</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.galleryBtn]}
-              onPress={handleOpenFilePicker}
-              activeOpacity={0.85}
-            >
-              <UploadCloud size={22} color="#1b4332" />
-              <Text style={[styles.actionBtnText, styles.galleryBtnText]}>Upload Image</Text>
+            <TouchableOpacity style={styles.secondaryActionBtn} onPress={handleOpenFilePicker} activeOpacity={0.85}>
+              <UploadCloud size={20} color={Colors.foreground} />
+              <Text style={styles.secondaryActionBtnText}>Upload Image</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -86,93 +101,164 @@ export const CNICUploadBox: React.FC<CNICUploadBoxProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 14,
-    gap: 12,
+    marginVertical: Spacing.sm,
+    gap: Spacing.md,
   },
   guidanceBox: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#F0FDF4',
-    padding: 12,
-    borderRadius: 10,
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    backgroundColor: Colors.primaryBg,
+    padding: Spacing.md,
+    borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: '#86EFAC',
+    borderColor: '#BBF7D0',
+  },
+  guidanceIconWrapper: {
+    paddingTop: 2,
   },
   guidanceText: {
     flex: 1,
-    fontSize: 12,
-    color: '#0F5132',
-    lineHeight: 16,
+    fontSize: FontSize.xs + 1,
+    color: Colors.foreground,
+    lineHeight: 18,
+    fontWeight: '600',
+  },
+  guidanceSub: {
+    fontSize: FontSize.xs,
+    color: Colors.mutedForeground,
+    fontWeight: '400',
   },
   uploadArea: {
-    borderWidth: 2,
-    borderColor: '#1b4332',
+    borderWidth: 1.5,
+    borderColor: Colors.border,
     borderStyle: 'dashed',
-    borderRadius: 14,
-    padding: 24,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
-    gap: 8,
+    backgroundColor: '#FAFDFB',
+    gap: Spacing.md,
+  },
+  cardHeaderStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    backgroundColor: Colors.white,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  cardHeaderStripText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.primaryDark,
+    letterSpacing: 0.6,
+  },
+  cardCenter: {
+    alignItems: 'center',
+    gap: 4,
   },
   uploadTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: FontSize.md + 1,
+    fontWeight: '700',
+    color: Colors.foreground,
   },
   uploadSub: {
-    fontSize: 13,
-    color: '#64748B',
+    fontSize: FontSize.sm,
+    color: Colors.mutedForeground,
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 12,
+    gap: Spacing.md,
+    marginTop: Spacing.xs,
     width: '100%',
   },
-  actionBtn: {
+  primaryActionBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1b4332',
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 8,
+    backgroundColor: Colors.primary,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.lg,
+    gap: Spacing.xs + 2,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  actionBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+  primaryActionBtnText: {
+    color: Colors.white,
+    fontSize: FontSize.sm + 1,
     fontWeight: '700',
   },
-  galleryBtn: {
-    backgroundColor: '#FFFFFF',
+  secondaryActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
     borderWidth: 1.5,
-    borderColor: '#1b4332',
+    borderColor: Colors.border,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.lg,
+    gap: Spacing.xs + 2,
   },
-  galleryBtnText: {
-    color: '#1b4332',
+  secondaryActionBtnText: {
+    color: Colors.foreground,
+    fontSize: FontSize.sm + 1,
+    fontWeight: '600',
   },
   previewContainer: {
     alignItems: 'center',
-    gap: 10,
+    gap: Spacing.sm,
+  },
+  imageCard: {
+    width: '100%',
+    height: 190,
+    borderRadius: Radius.lg,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: Colors.muted,
   },
   previewImage: {
     width: '100%',
-    height: 200,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#1b4332',
+    height: '100%',
+  },
+  verifiedChip: {
+    position: 'absolute',
+    top: Spacing.sm,
+    right: Spacing.sm,
+    backgroundColor: Colors.primaryDark,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+  },
+  verifiedChipText: {
+    color: Colors.white,
+    fontSize: 11,
+    fontWeight: '700',
   },
   retakeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 8,
+    paddingVertical: Spacing.xs + 2,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primaryBg,
   },
   retakeText: {
-    fontSize: 13,
+    fontSize: FontSize.xs + 1,
     fontWeight: '700',
-    color: '#1b4332',
+    color: Colors.primary,
   },
 });

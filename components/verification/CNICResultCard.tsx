@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
-import { Check, Edit2, Lock, ShieldCheck, Sparkles, User, CreditCard } from 'lucide-react-native';
+import { Check, Edit2, Lock, ShieldCheck, Sparkles, User, CreditCard, CheckCircle2 } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
 import { ExtractionSource } from '@/types/identityVerification';
+import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
 
 interface CNICResultCardProps {
   holderName: string;
@@ -55,12 +56,12 @@ export const CNICResultCard: React.FC<CNICResultCardProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.aiBadge}>
-        <Sparkles size={16} color="#0F5132" />
-        <Text style={styles.aiBadgeText}>CNIC Information Detected (Gemini AI)</Text>
+        <Sparkles size={16} color={Colors.primary} />
+        <Text style={styles.aiBadgeText}>CNIC Information Detected (AI Verified)</Text>
       </View>
 
       <Text style={styles.instruction}>
-        Please review the extracted information. If any detail is incorrect, tap edit to correct it before confirming.
+        شناختی کارڈ کی تفصیلات چیک کر لیں۔ اگر کوئی معلومات غلط ہیں تو درست کریں۔
       </Text>
 
       {isEditing ? (
@@ -71,6 +72,7 @@ export const CNICResultCard: React.FC<CNICResultCardProps> = ({
             value={editedName}
             onChangeText={setEditedName}
             placeholder="Full Name"
+            placeholderTextColor={Colors.mutedForeground}
           />
 
           <Text style={styles.fieldLabel}>CNIC Number (XXXXX-XXXXXXX-X)</Text>
@@ -79,19 +81,22 @@ export const CNICResultCard: React.FC<CNICResultCardProps> = ({
             value={editedCnic}
             onChangeText={setEditedCnic}
             placeholder="35202-1234567-1"
+            placeholderTextColor={Colors.mutedForeground}
           />
 
           <TouchableOpacity style={styles.saveEditBtn} onPress={handleSaveEdits}>
-            <Check size={16} color="#FFFFFF" />
+            <Check size={16} color={Colors.white} />
             <Text style={styles.saveEditText}>Save Edits</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <View style={styles.infoBox}>
           <View style={styles.infoRow}>
-            <User size={18} color="#1b4332" />
+            <View style={styles.iconCircle}>
+              <User size={18} color={Colors.primary} />
+            </View>
             <View style={styles.infoCol}>
-              <Text style={styles.label}>Full Name</Text>
+              <Text style={styles.label}>نام / Full Name</Text>
               <Text style={styles.valText}>{editedName}</Text>
             </View>
           </View>
@@ -99,39 +104,41 @@ export const CNICResultCard: React.FC<CNICResultCardProps> = ({
           <View style={styles.divider} />
 
           <View style={styles.infoRow}>
-            <CreditCard size={18} color="#1b4332" />
+            <View style={styles.iconCircle}>
+              <CreditCard size={18} color={Colors.primary} />
+            </View>
             <View style={styles.infoCol}>
-              <Text style={styles.label}>CNIC Number</Text>
+              <Text style={styles.label}>شناختی کارڈ نمبر / CNIC Number</Text>
               <Text style={styles.valText}>{editedCnic}</Text>
             </View>
           </View>
 
           <TouchableOpacity style={styles.editToggleBtn} onPress={() => setIsEditing(true)}>
-            <Edit2 size={14} color="#1b4332" />
-            <Text style={styles.editToggleText}>Edit Details</Text>
+            <Edit2 size={14} color={Colors.primary} />
+            <Text style={styles.editToggleText}>معلومات تبدیل کریں / Edit Details</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {/* Privacy Message */}
       <View style={styles.privacyNote}>
-        <Lock size={14} color="#64748B" />
+        <Lock size={14} color={Colors.mutedForeground} />
         <Text style={styles.privacyText}>
-          Your identity information is used only for account verification and is not visible to other AgroEndure users.
+          یہ معلومات صرف اکاؤنٹ کی تصدیق کے لیے ہے۔ دیگر صارفین سے مکمل پوشیدہ رہے گی۔
         </Text>
       </View>
 
       <View style={styles.actionGroup}>
         <Button
-          title="Confirm Information & Verify"
+          title="معلومات کی توثیق کریں • Confirm & Continue"
           onPress={handleFinalSubmit}
           loading={isSubmitting}
-          icon={<ShieldCheck size={18} color="#FFFFFF" />}
+          icon={<ShieldCheck size={18} color={Colors.white} />}
           style={styles.confirmBtn}
         />
 
         <TouchableOpacity style={styles.retakeActionBtn} onPress={onRetake}>
-          <Text style={styles.retakeActionText}>Upload Different Image</Text>
+          <Text style={styles.retakeActionText}>دوسری تصویر اپلوڈ کریں / Upload Different Image</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -140,110 +147,128 @@ export const CNICResultCard: React.FC<CNICResultCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
     borderWidth: 1.5,
-    borderColor: '#1b4332',
-    padding: 18,
-    marginVertical: 14,
-    gap: 14,
+    borderColor: '#BBF7D0',
+    padding: Spacing.lg,
+    marginVertical: Spacing.sm,
+    gap: Spacing.md,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   aiBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: Colors.primaryBg,
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingVertical: 5,
+    borderRadius: Radius.full,
     alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
   },
   aiBadgeText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#0F5132',
-    textTransform: 'uppercase',
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.primaryDark,
+    letterSpacing: 0.4,
   },
   instruction: {
-    fontSize: 13,
-    color: '#475569',
+    fontSize: FontSize.xs + 1,
+    color: Colors.mutedForeground,
     lineHeight: 18,
   },
   infoBox: {
     backgroundColor: '#F8FAFC',
-    borderRadius: 12,
+    borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 14,
-    gap: 12,
+    borderColor: Colors.border,
+    padding: Spacing.md,
+    gap: Spacing.md,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: Spacing.md,
+  },
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.primaryBg,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   infoCol: {
     gap: 2,
+    flex: 1,
   },
   label: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    color: '#64748B',
-    textTransform: 'uppercase',
+    color: Colors.mutedForeground,
+    letterSpacing: 0.5,
   },
   valText: {
-    fontSize: 16,
+    fontSize: FontSize.md + 1,
     fontWeight: '800',
-    color: '#0F172A',
+    color: Colors.foreground,
   },
   divider: {
     height: 1,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: Colors.border,
   },
   editToggleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingTop: 6,
+    paddingTop: 4,
   },
   editToggleText: {
-    fontSize: 13,
+    fontSize: FontSize.xs + 1,
     fontWeight: '700',
-    color: '#1b4332',
+    color: Colors.primary,
   },
   editSection: {
     gap: 10,
     backgroundColor: '#F8FAFC',
-    padding: 14,
-    borderRadius: 10,
+    padding: Spacing.md,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   fieldLabel: {
-    fontSize: 12,
+    fontSize: FontSize.xs,
     fontWeight: '700',
-    color: '#334155',
+    color: Colors.foreground,
   },
   textInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 15,
-    color: '#0F172A',
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    padding: Spacing.sm + 2,
+    fontSize: FontSize.sm + 1,
+    color: Colors.foreground,
   },
   saveEditBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1b4332',
+    backgroundColor: Colors.primary,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: Radius.md,
     gap: 6,
     marginTop: 4,
   },
   saveEditText: {
-    color: '#FFFFFF',
+    color: Colors.white,
     fontWeight: '700',
     fontSize: 13,
   },
@@ -251,30 +276,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
     padding: 10,
-    borderRadius: 8,
+    borderRadius: Radius.md,
   },
   privacyText: {
     flex: 1,
     fontSize: 11,
-    color: '#64748B',
-    lineHeight: 15,
+    color: Colors.mutedForeground,
+    lineHeight: 16,
   },
   actionGroup: {
     gap: 10,
     marginTop: 4,
   },
   confirmBtn: {
-    backgroundColor: '#1b4332',
+    backgroundColor: Colors.primary,
     paddingVertical: 14,
+    borderRadius: Radius.lg,
   },
   retakeActionBtn: {
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   retakeActionText: {
-    color: '#64748B',
-    fontSize: 13,
+    color: Colors.mutedForeground,
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

@@ -14,51 +14,55 @@ function hslToHex(h: number, s: number, l: number): string {
 }
 
 export const Colors = {
-  background: hslToHex(0, 0, 100),
-  foreground: hslToHex(140, 10, 15),
+  background: '#FFFFFF',
+  foreground: '#0F172A',
 
-  primary: hslToHex(140, 65, 35),
-  primaryForeground: hslToHex(0, 0, 100),
-  primaryLight: hslToHex(140, 45, 45),
-  primaryDark: hslToHex(140, 85, 25),
+  primary: '#15803D',
+  primaryForeground: '#FFFFFF',
+  primaryLight: '#22C55E',
+  primaryDark: '#166534',
+  primaryBg: '#F0FDF4',
 
-  secondary: hslToHex(35, 40, 85),
-  secondaryForeground: hslToHex(140, 10, 15),
+  secondary: '#F8FAFC',
+  secondaryForeground: '#0F172A',
 
-  accent: hslToHex(140, 35, 90),
-  accentForeground: hslToHex(140, 10, 15),
+  accent: '#DCFCE7',
+  accentForeground: '#15803D',
 
-  muted: hslToHex(140, 15, 95),
-  mutedForeground: hslToHex(140, 10, 45),
+  muted: '#F1F5F9',
+  mutedForeground: '#64748B',
 
-  card: hslToHex(0, 0, 100),
-  cardForeground: hslToHex(140, 10, 15),
+  card: '#FFFFFF',
+  cardForeground: '#0F172A',
 
-  popover: hslToHex(0, 0, 100),
-  popoverForeground: hslToHex(140, 10, 15),
+  popover: '#FFFFFF',
+  popoverForeground: '#0F172A',
 
-  border: hslToHex(140, 20, 85),
-  input: hslToHex(140, 20, 95),
-  ring: hslToHex(140, 65, 35),
+  border: '#E2E8F0',
+  borderLight: '#F1F5F9',
+  borderFocus: '#15803D',
+  input: '#F8FAFC',
+  ring: '#15803D',
 
-  success: hslToHex(142, 76, 36),
-  successForeground: hslToHex(0, 0, 100),
+  success: '#16A34A',
+  successForeground: '#FFFFFF',
 
-  warning: hslToHex(48, 96, 53),
-  warningForeground: hslToHex(0, 0, 100),
+  warning: '#F59E0B',
+  warningForeground: '#FFFFFF',
 
-  error: hslToHex(0, 84, 60),
-  errorForeground: hslToHex(0, 0, 100),
+  error: '#EF4444',
+  errorForeground: '#FFFFFF',
 
-  voiceActive: hslToHex(140, 80, 45),
-  voiceInactive: hslToHex(140, 20, 70),
-  voicePulse: hslToHex(140, 65, 35),
+  voiceActive: '#22C55E',
+  voiceInactive: '#94A3B8',
+  voicePulse: '#15803D',
 
   // Aliases for status badges
-  successBg: `${hslToHex(142, 76, 36)}20`,
-  errorBg: `${hslToHex(0, 84, 60)}15`,
-  warningBg: `${hslToHex(48, 96, 53)}18`,
-  primaryBg: `${hslToHex(140, 65, 35)}15`,
+  successBg: '#DCFCE7',
+  errorBg: '#FEE2E2',
+  warningBg: '#FEF3C7',
+  disabled: '#E2E8F0',
+  disabledText: '#94A3B8',
 
   // Gradients (React Native requires explicit stops)
   gradientPrimaryStart: hslToHex(140, 65, 35),

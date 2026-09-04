@@ -29,10 +29,14 @@ import {
   Camera,
   RefreshCw,
   CheckCircle,
+  CheckCircle2,
   Tractor,
   ShoppingBag,
   Lock,
   AlertCircle,
+  ScanFace,
+  UploadCloud,
+  Sparkles,
 } from 'lucide-react-native';
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
 import { useDemoAuth } from '@/services/auth/demoAuthContext';
@@ -126,8 +130,14 @@ export default function OnboardingFlow() {
   };
 
   // --- Role ---
+  const [selectedRole, setSelectedRole] = useState<'seller' | 'buyer'>(data.role || 'seller');
+
   const handleRoleSelect = (role: 'buyer' | 'seller') => {
-    setRole(role);
+    setSelectedRole(role);
+  };
+
+  const handleRoleContinue = () => {
+    setRole(selectedRole);
     setStep('language');
   };
 
@@ -182,18 +192,22 @@ export default function OnboardingFlow() {
         setFacePhotoUri(result.assets[0].uri);
       }
     } catch {
-      try {
-        const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          quality: 0.8,
-        });
-        if (!result.canceled && result.assets[0]?.uri) {
-          setFacePhotoUri(result.assets[0].uri);
-        }
-      } catch {
-        // User cancelled
+      handleChooseSelfieFromGallery();
+    }
+  };
+
+  const handleChooseSelfieFromGallery = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]?.uri) {
+        setFacePhotoUri(result.assets[0].uri);
       }
+    } catch {
+      // User cancelled
     }
   };
 
@@ -274,15 +288,30 @@ export default function OnboardingFlow() {
     }
   };
 
-  // --- Progress dots ---
+  // --- Progress Stepper Header ---
   const renderDots = () => (
-    <View style={styles.dots}>
-      {steps.map((s, i) => (
-        <View
-          key={s}
-          style={[styles.dot, { backgroundColor: currentIndex >= i ? Colors.primary : Colors.border }]}
-        />
-      ))}
+    <View style={styles.stepperContainer}>
+      <View style={styles.stepperBars}>
+        {steps.map((s, i) => {
+          const isCurrent = currentIndex === i;
+          const isCompleted = currentIndex > i;
+          return (
+            <View
+              key={s}
+              style={[
+                styles.stepperBar,
+                isCurrent && styles.stepperBarActive,
+                isCompleted && styles.stepperBarCompleted,
+              ]}
+            />
+          );
+        })}
+      </View>
+      <View style={styles.stepBadge}>
+        <Text style={styles.stepBadgeText}>
+          {currentIndex + 1} / {steps.length}
+        </Text>
+      </View>
     </View>
   );
 
@@ -299,8 +328,8 @@ export default function OnboardingFlow() {
       >
         {SLIDES.map((slide, i) => (
           <View key={i} style={[styles.slideContainer, { width: SCREEN_WIDTH }]}>
-            <View style={[styles.slideIconWrapper, { backgroundColor: `${slide.color}18` }]}>
-              <slide.icon size={56} color={slide.color} />
+            <View style={[styles.slideIconWrapper, { backgroundColor: `${slide.color}15` }]}>
+              <slide.icon size={52} color={slide.color} />
             </View>
             <Text style={styles.slideTitle}>{slide.title}</Text>
             <Text style={styles.slideSubtitle}>{slide.subtitle}</Text>
@@ -314,22 +343,22 @@ export default function OnboardingFlow() {
             key={i}
             style={[
               styles.slideDot,
-              { backgroundColor: slideIndex === i ? Colors.primary : Colors.border },
+              slideIndex === i && styles.slideDotActive,
             ]}
           />
         ))}
       </View>
 
       <View style={styles.slideActions}>
-        <TouchableOpacity style={styles.primaryButton} onPress={goToNextSlide}>
+        <TouchableOpacity style={styles.primaryButton} onPress={goToNextSlide} activeOpacity={0.88}>
           <Text style={styles.primaryButtonText}>
-            {slideIndex < SLIDES.length - 1 ? 'اگلا' : 'شروع کریں'}
+            {slideIndex < SLIDES.length - 1 ? 'اگلا مرحلہ • Next' : 'شروع کریں • Get Started'}
           </Text>
           <ArrowRight size={20} color={Colors.white} />
         </TouchableOpacity>
         {slideIndex === 0 && (
           <TouchableOpacity style={styles.demoButton} onPress={goToDashboard}>
-            <Text style={styles.demoButtonText}>ڈیش بورڈ دیکھیں</Text>
+            <Text style={styles.demoButtonText}>ڈیش بورڈ دیکھیں • Explore Dashboard</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -340,35 +369,95 @@ export default function OnboardingFlow() {
   const renderRole = () => (
     <View style={styles.stepContainer}>
       <View style={styles.center}>
+        <View style={styles.headerIconCircle}>
+          <Tractor size={28} color={Colors.primary} />
+        </View>
         <Text style={styles.stepTitle}>اپنا کردار منتخب کریں</Text>
-        <Text style={styles.stepSubtitle}>Select your role</Text>
+        <Text style={styles.stepSubtitle}>Select your account role to continue</Text>
       </View>
 
-      <View style={styles.roleRow}>
+      <View style={styles.roleGrid}>
+        {/* Farmer Card */}
         <TouchableOpacity
-          style={[styles.roleCard, data.role === 'seller' && styles.roleCardSelected]}
+          style={[
+            styles.roleCard,
+            selectedRole === 'seller' ? styles.roleCardSelected : styles.roleCardUnselected,
+          ]}
           onPress={() => handleRoleSelect('seller')}
+          activeOpacity={0.88}
         >
-          <View style={[styles.roleIconWrapper, { backgroundColor: Colors.primaryBg }]}>
+          <View style={styles.roleCardHeader}>
+            <View style={[styles.roleBadge, selectedRole === 'seller' && styles.roleBadgeActive]}>
+              <Text style={[styles.roleBadgeText, selectedRole === 'seller' && styles.roleBadgeTextActive]}>
+                بیچنے والا • Seller
+              </Text>
+            </View>
+            <View style={[styles.radioCircle, selectedRole === 'seller' && styles.radioCircleSelected]}>
+              {selectedRole === 'seller' && <CheckCircle2 size={18} color={Colors.primary} />}
+            </View>
+          </View>
+
+          <View style={styles.roleIconWrapper}>
             <Tractor size={36} color={Colors.primary} />
           </View>
-          <Text style={styles.roleTitle}>Farmer</Text>
-          <Text style={styles.roleTitleUrdu}>کسان</Text>
-          <Text style={styles.roleDesc}>فصل بیچیں اور منافع کمائیں</Text>
+
+          <View style={styles.roleTextContainer}>
+            <Text style={styles.roleTitle}>Farmer</Text>
+            <Text style={styles.roleTitleUrdu}>کسان / زمیندار</Text>
+            <Text style={styles.roleDesc}>اپنی فصل کی لسٹنگ بنائیں، سمارٹ بولیاں وصول کریں اور منافع کمائیں</Text>
+          </View>
+
+          <View style={styles.rolePerksRow}>
+            <Text style={styles.rolePerkItem}>✓ AI آواز لسٹنگ</Text>
+            <Text style={styles.rolePerkItem}>✓ محفوظ ڈیجیٹل معاہدہ</Text>
+          </View>
         </TouchableOpacity>
 
+        {/* Buyer Card */}
         <TouchableOpacity
-          style={[styles.roleCard, data.role === 'buyer' && styles.roleCardSelected]}
+          style={[
+            styles.roleCard,
+            selectedRole === 'buyer' ? styles.roleCardSelected : styles.roleCardUnselected,
+          ]}
           onPress={() => handleRoleSelect('buyer')}
+          activeOpacity={0.88}
         >
-          <View style={[styles.roleIconWrapper, { backgroundColor: `${Colors.blue500}18` }]}>
-            <ShoppingBag size={36} color={Colors.blue500} />
+          <View style={styles.roleCardHeader}>
+            <View style={[styles.roleBadge, selectedRole === 'buyer' && styles.roleBadgeActive]}>
+              <Text style={[styles.roleBadgeText, selectedRole === 'buyer' && styles.roleBadgeTextActive]}>
+                خریدار • Trader
+              </Text>
+            </View>
+            <View style={[styles.radioCircle, selectedRole === 'buyer' && styles.radioCircleSelected]}>
+              {selectedRole === 'buyer' && <CheckCircle2 size={18} color={Colors.primary} />}
+            </View>
           </View>
-          <Text style={styles.roleTitle}>Buyer</Text>
-          <Text style={styles.roleTitleUrdu}>خریدار</Text>
-          <Text style={styles.roleDesc}>تازہ فصل خریدیں</Text>
+
+          <View style={styles.roleIconWrapper}>
+            <ShoppingBag size={36} color={Colors.primary} />
+          </View>
+
+          <View style={styles.roleTextContainer}>
+            <Text style={styles.roleTitle}>Buyer</Text>
+            <Text style={styles.roleTitleUrdu}>خریدار / تاجر</Text>
+            <Text style={styles.roleDesc}>تصدیق شدہ کسانوں سے معیاری گندم، چاول اور کپاس کی فصلیں براہ راست خریدیں</Text>
+          </View>
+
+          <View style={styles.rolePerksRow}>
+            <Text style={styles.rolePerkItem}>✓ شفاف ریٹس</Text>
+            <Text style={styles.rolePerkItem}>✓ ایسکرو سیکیورٹی</Text>
+          </View>
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity
+        style={styles.primaryButton}
+        onPress={handleRoleContinue}
+        activeOpacity={0.88}
+      >
+        <Text style={styles.primaryButtonText}>اگلا مرحلہ — جاری رکھیں • Continue</Text>
+        <ArrowRight size={20} color={Colors.white} />
+      </TouchableOpacity>
     </View>
   );
 
@@ -376,35 +465,56 @@ export default function OnboardingFlow() {
   const renderLanguage = () => (
     <View style={styles.stepContainer}>
       <View style={styles.center}>
-        <Globe size={48} color={Colors.primary} />
+        <View style={styles.headerIconCircle}>
+          <Globe size={28} color={Colors.primary} />
+        </View>
         <Text style={styles.stepTitle}>اپنی زبان منتخب کریں</Text>
-        <Text style={styles.stepSubtitle}>Choose your preferred language</Text>
+        <Text style={styles.stepSubtitle}>Choose your preferred app language</Text>
       </View>
 
       <View style={styles.languageList}>
         {[
-          { code: 'ur', native: 'اردو', name: 'Urdu' },
-          { code: 'en', native: 'English', name: 'English' },
-        ].map((lang) => (
-          <TouchableOpacity
-            key={lang.code}
-            onPress={() => setSelectedLang(lang.code)}
-            style={[
-              styles.languageButton,
-              {
-                borderColor: selectedLang === lang.code ? Colors.primary : Colors.border,
-                backgroundColor: selectedLang === lang.code ? Colors.primaryBg : Colors.card,
-              },
-            ]}
-          >
-            <Text style={styles.languageNative}>{lang.native}</Text>
-            <Text style={styles.languageName}>{lang.name}</Text>
-          </TouchableOpacity>
-        ))}
+          { code: 'ur', native: 'اردو', name: 'Urdu (پاکستانی اردو)', badge: 'تجویز کردہ • Recommended' },
+          { code: 'en', native: 'English', name: 'English (US / UK)', badge: 'Official' },
+        ].map((lang) => {
+          const isSelected = selectedLang === lang.code;
+          return (
+            <TouchableOpacity
+              key={lang.code}
+              onPress={() => setSelectedLang(lang.code)}
+              activeOpacity={0.88}
+              style={[
+                styles.languageCard,
+                isSelected ? styles.languageCardSelected : styles.languageCardUnselected,
+              ]}
+            >
+              <View style={styles.languageCardLeft}>
+                <Text style={[styles.languageNative, isSelected && { color: Colors.primary }]}>
+                  {lang.native}
+                </Text>
+                <Text style={styles.languageName}>{lang.name}</Text>
+              </View>
+              <View style={styles.languageCardRight}>
+                <View style={[styles.langBadge, isSelected && styles.langBadgeSelected]}>
+                  <Text style={[styles.langBadgeText, isSelected && { color: Colors.primaryDark }]}>
+                    {lang.badge}
+                  </Text>
+                </View>
+                <View style={[styles.radioCircle, isSelected && styles.radioCircleSelected]}>
+                  {isSelected && <CheckCircle2 size={18} color={Colors.primary} />}
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      <TouchableOpacity style={styles.primaryButton} onPress={handleLanguageContinue}>
-        <Text style={styles.primaryButtonText}>جاری رکھیں</Text>
+      <TouchableOpacity
+        style={styles.primaryButton}
+        onPress={handleLanguageContinue}
+        activeOpacity={0.88}
+      >
+        <Text style={styles.primaryButtonText}>جاری رکھیں • Continue to CNIC</Text>
         <ArrowRight size={20} color={Colors.white} />
       </TouchableOpacity>
     </View>
@@ -414,9 +524,11 @@ export default function OnboardingFlow() {
   const renderCnic = () => (
     <View style={styles.stepContainer}>
       <View style={styles.center}>
-        <ShieldCheck size={36} color={Colors.primary} />
+        <View style={styles.headerIconCircle}>
+          <ShieldCheck size={28} color={Colors.primary} />
+        </View>
         <Text style={styles.stepTitle}>شناخت کی تصدیق</Text>
-        <Text style={styles.stepSubtitle}>Upload your CNIC for verification</Text>
+        <Text style={styles.stepSubtitle}>Upload your Pakistani CNIC for verification</Text>
       </View>
 
       {cnicError && (
@@ -429,8 +541,8 @@ export default function OnboardingFlow() {
       {isCnicProcessing ? (
         <View style={styles.processingCard}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.processingTitle}>CNIC Analyzing...</Text>
-          <Text style={styles.processingSub}>AI extracting document details</Text>
+          <Text style={styles.processingTitle}>شناختی کارڈ کا تجزیہ جاری ہے...</Text>
+          <Text style={styles.processingSub}>AI extracting document name & CNIC number</Text>
         </View>
       ) : cnicResult ? (
         <CNICResultCard
@@ -451,20 +563,27 @@ export default function OnboardingFlow() {
             onSelectImage={(uri) => setCnicImage(uri)}
             onClearImage={() => setCnicImage(null)}
           />
+
           <TouchableOpacity
-            style={[styles.primaryButton, !cnicImage && styles.disabledButton]}
+            style={[
+              styles.primaryButton,
+              !cnicImage && styles.disabledSubmitButton,
+            ]}
             onPress={handleCnicOcr}
             disabled={!cnicImage}
+            activeOpacity={0.88}
           >
-            <Text style={styles.primaryButtonText}>Submit for Verification</Text>
-            <ArrowRight size={20} color={Colors.white} />
+            <Text style={[styles.primaryButtonText, !cnicImage && styles.disabledSubmitButtonText]}>
+              {cnicImage ? 'تصدیق کے لیے جمع کریں • Submit for Verification' : 'پہلے تصویر منتخب کریں • Select Photo First'}
+            </Text>
+            <ArrowRight size={20} color={cnicImage ? Colors.white : Colors.disabledText} />
           </TouchableOpacity>
         </View>
       )}
 
       <View style={styles.footerNote}>
         <Lock size={14} color={Colors.mutedForeground} />
-        <Text style={styles.footerText}>Your CNIC is encrypted and stored securely.</Text>
+        <Text style={styles.footerText}>256-bit انکرپٹڈ • آپ کا شناختی کارڈ مکمل محفوظ ہے</Text>
       </View>
     </View>
   );
@@ -473,47 +592,110 @@ export default function OnboardingFlow() {
   const renderFace = () => (
     <View style={styles.stepContainer}>
       <View style={styles.center}>
-        <Camera size={48} color={Colors.primary} />
-        <Text style={styles.stepTitle}>تصویری تصدیق</Text>
-        <Text style={styles.stepSubtitle}>Take a clear selfie for verification</Text>
+        <View style={styles.headerIconCircle}>
+          <ScanFace size={28} color={Colors.primary} />
+        </View>
+        <Text style={styles.stepTitle}>تصویری تصدیق (سیلفی)</Text>
+        <Text style={styles.stepSubtitle}>Take a clear selfie to match with your CNIC</Text>
       </View>
 
       {facePhotoUri ? (
         <View style={styles.facePreview}>
-          <Image source={{ uri: facePhotoUri }} style={styles.faceImage} />
+          <View style={styles.facePreviewWrapper}>
+            <Image source={{ uri: facePhotoUri }} style={styles.faceImage} />
+            <View style={styles.faceVerifiedBadge}>
+              <CheckCircle2 size={16} color={Colors.white} />
+              <Text style={styles.faceVerifiedBadgeText}>تصویر محفوظ ہو گئی</Text>
+            </View>
+          </View>
+
           {isFaceVerifying ? (
-            <View style={styles.faceVerifying}>
+            <View style={styles.processingCard}>
               <ActivityIndicator size="large" color={Colors.primary} />
-              <Text style={styles.processingTitle}>Verifying face...</Text>
+              <Text style={styles.processingTitle}>چہرے کی بائیو میٹرک تصدیق ہو رہی ہے...</Text>
+              <Text style={styles.processingSub}>Matching selfie with CNIC photo</Text>
             </View>
           ) : (
-            <View style={styles.faceActions}>
+            <View style={styles.actionRow}>
               <TouchableOpacity
-                style={styles.secondaryButton}
+                style={[styles.secondaryButton, styles.flexBtn]}
                 onPress={() => setFacePhotoUri(null)}
+                activeOpacity={0.88}
               >
                 <RefreshCw size={18} color={Colors.foreground} />
-                <Text style={styles.secondaryButtonText}>Retake</Text>
+                <Text style={styles.secondaryButtonText}>دوبارہ لیں • Retake</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.primaryButton} onPress={handleFaceVerify}>
-                <Text style={styles.primaryButtonText}>Confirm</Text>
-                <CheckCircle size={18} color={Colors.white} />
+              <TouchableOpacity
+                style={[styles.primaryButton, styles.flexBtn]}
+                onPress={handleFaceVerify}
+                activeOpacity={0.88}
+              >
+                <CheckCircle2 size={18} color={Colors.white} />
+                <Text style={styles.primaryButtonText}>تصدیق مکمل کریں</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
       ) : (
-        <View style={styles.faceCapture}>
-          <View style={styles.faceGuide}>
-            <Camera size={64} color={Colors.mutedForeground} />
-            <Text style={styles.faceGuideText}>Position your face in the circle</Text>
+        <View style={styles.faceCaptureContainer}>
+          {/* Biometric Viewfinder Portal */}
+          <View style={styles.biometricPortal}>
+            <View style={styles.biometricOuterRing}>
+              <View style={styles.biometricInnerRing}>
+                <ScanFace size={56} color={Colors.primary} />
+                <View style={styles.bracketTL} />
+                <View style={styles.bracketTR} />
+                <View style={styles.bracketBL} />
+                <View style={styles.bracketBR} />
+              </View>
+            </View>
+
+            <View style={styles.biometricStatusPill}>
+              <View style={styles.pulseDot} />
+              <Text style={styles.biometricStatusText}>چہرہ دائرے کے اندر سیدھا رکھیں</Text>
+            </View>
           </View>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleTakeSelfie}>
-            <Camera size={20} color={Colors.white} />
-            <Text style={styles.primaryButtonText}>Take Selfie</Text>
-          </TouchableOpacity>
+
+          {/* Guidance Chips */}
+          <View style={styles.guidanceChipsRow}>
+            <View style={styles.guidanceChip}>
+              <Text style={styles.guidanceChipText}>☀️ مناسب روشنی</Text>
+            </View>
+            <View style={styles.guidanceChip}>
+              <Text style={styles.guidanceChipText}>👓 عینک اتار لیں</Text>
+            </View>
+            <View style={styles.guidanceChip}>
+              <Text style={styles.guidanceChipText}>👤 سامنے دیکھیں</Text>
+            </View>
+          </View>
+
+          {/* Action Buttons: Full Width, Non-collapsing, Premium Style */}
+          <View style={styles.selfieButtonStack}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleTakeSelfie}
+              activeOpacity={0.88}
+            >
+              <Camera size={22} color={Colors.white} />
+              <Text style={styles.primaryButtonText}>کیمرہ کھولیں اور سیلفی لیں • Take Selfie</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.outlineUploadButton}
+              onPress={handleChooseSelfieFromGallery}
+              activeOpacity={0.88}
+            >
+              <UploadCloud size={18} color={Colors.primary} />
+              <Text style={styles.outlineUploadButtonText}>گیلری سے تصویر منتخب کریں • Choose from Gallery</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
+
+      <View style={styles.footerNote}>
+        <Lock size={14} color={Colors.mutedForeground} />
+        <Text style={styles.footerText}>بائیو میٹرک ڈیٹا انکرپشن کے ساتھ مکمل محفوظ ہے</Text>
+      </View>
     </View>
   );
 
@@ -521,9 +703,11 @@ export default function OnboardingFlow() {
   const renderPhone = () => (
     <View style={styles.stepContainer}>
       <View style={styles.center}>
-        <Phone size={48} color={Colors.primary} />
+        <View style={styles.headerIconCircle}>
+          <Phone size={28} color={Colors.primary} />
+        </View>
         <Text style={styles.stepTitle}>فون نمبر کی تصدیق</Text>
-        <Text style={styles.stepSubtitle}>Enter your phone number</Text>
+        <Text style={styles.stepSubtitle}>Enter your phone number to receive OTP code</Text>
       </View>
 
       <View style={styles.phoneInputRow}>
@@ -544,16 +728,22 @@ export default function OnboardingFlow() {
 
       {!otpSent ? (
         <TouchableOpacity
-          style={[styles.primaryButton, phoneNumber.length < 10 && styles.disabledButton]}
+          style={[
+            styles.primaryButton,
+            phoneNumber.length < 10 && styles.disabledSubmitButton,
+          ]}
           onPress={handleSendOtp}
           disabled={phoneNumber.length < 10}
+          activeOpacity={0.88}
         >
-          <Text style={styles.primaryButtonText}>Send Code</Text>
-          <ArrowRight size={20} color={Colors.white} />
+          <Text style={[styles.primaryButtonText, phoneNumber.length < 10 && styles.disabledSubmitButtonText]}>
+            کوڈ حاصل کریں • Send Verification Code
+          </Text>
+          <ArrowRight size={20} color={phoneNumber.length < 10 ? Colors.disabledText : Colors.white} />
         </TouchableOpacity>
       ) : (
         <View style={styles.otpSection}>
-          <Text style={styles.otpLabel}>+92 {phoneNumber} پر بھیجا گیا کوڈ داخل کریں</Text>
+          <Text style={styles.otpLabel}>+92 {phoneNumber} پر بھیجا گیا 4 ہندسوں کا کوڈ درج کریں</Text>
           <View style={styles.otpRow}>
             {[0, 1, 2, 3].map((i) => (
               <TextInput
@@ -569,16 +759,17 @@ export default function OnboardingFlow() {
           </View>
 
           <TouchableOpacity
-            style={[styles.primaryButton, isPhoneVerifying && styles.disabledButton]}
+            style={[styles.primaryButton, isPhoneVerifying && styles.disabledSubmitButton]}
             onPress={handleVerifyOtp}
             disabled={isPhoneVerifying}
+            activeOpacity={0.88}
           >
             {isPhoneVerifying ? (
               <ActivityIndicator color={Colors.white} />
             ) : (
               <>
-                <Text style={styles.primaryButtonText}>تصدیق کریں</Text>
-                <CheckCircle size={18} color={Colors.white} />
+                <Text style={styles.primaryButtonText}>تصدیق مکمل کریں • Verify & Enter</Text>
+                <CheckCircle2 size={18} color={Colors.white} />
               </>
             )}
           </TouchableOpacity>
@@ -593,10 +784,12 @@ export default function OnboardingFlow() {
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           {/* Header with back button and progress */}
           <View style={styles.header}>
-            {step !== 'slides' && (
-              <TouchableOpacity onPress={goBack}>
+            {step !== 'slides' ? (
+              <TouchableOpacity onPress={goBack} style={styles.backButton} activeOpacity={0.8}>
                 <ArrowLeft size={20} color={Colors.foreground} />
               </TouchableOpacity>
+            ) : (
+              <View style={{ width: 40 }} />
             )}
             {renderDots()}
           </View>
@@ -623,38 +816,89 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: Spacing.xxxl,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.lg,
-    minHeight: 24,
+    justifyContent: 'space-between',
+    marginBottom: Spacing.xl,
+    minHeight: 40,
   },
-  dots: {
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.secondary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperContainer: {
     flexDirection: 'row',
-    gap: Spacing.xs,
+    alignItems: 'center',
+    gap: Spacing.sm,
     marginLeft: 'auto',
   },
-  dot: {
+  stepperBars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  stepperBar: {
     width: 8,
-    height: 8,
-    borderRadius: 4,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.border,
+  },
+  stepperBarActive: {
+    width: 24,
+    backgroundColor: Colors.primary,
+  },
+  stepperBarCompleted: {
+    width: 10,
+    backgroundColor: '#86EFAC',
+  },
+  stepBadge: {
+    backgroundColor: Colors.primaryBg,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  stepBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.primaryDark,
   },
   stepContainer: {
     gap: Spacing.xl,
   },
   center: {
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: Spacing.xs + 2,
+  },
+  headerIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.primaryBg,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.xs,
   },
   stepTitle: {
-    fontSize: FontSize.xxl,
-    fontWeight: '700',
+    fontSize: FontSize.xxl + 2,
+    fontWeight: '800',
     color: Colors.foreground,
+    textAlign: 'center',
   },
   stepSubtitle: {
-    fontSize: FontSize.md,
+    fontSize: FontSize.sm + 1,
     color: Colors.mutedForeground,
     textAlign: 'center',
   },
@@ -667,16 +911,18 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xxxl,
   },
   slideIconWrapper: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 104,
+    height: 104,
+    borderRadius: 52,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.xl,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
   },
   slideTitle: {
     fontSize: FontSize.xxl,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.foreground,
     textAlign: 'center',
     marginBottom: Spacing.sm,
@@ -685,6 +931,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.mutedForeground,
     textAlign: 'center',
+    lineHeight: 22,
   },
   slideDots: {
     flexDirection: 'row',
@@ -696,72 +943,176 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+    backgroundColor: Colors.border,
+  },
+  slideDotActive: {
+    width: 24,
+    backgroundColor: Colors.primary,
   },
   slideActions: {
     gap: Spacing.md,
   },
 
   // Role
-  roleRow: {
-    flexDirection: 'row',
+  roleGrid: {
     gap: Spacing.md,
+    width: '100%',
   },
   roleCard: {
-    flex: 1,
-    alignItems: 'center',
-    padding: Spacing.xl,
     borderRadius: Radius.xl,
     borderWidth: 2,
-    borderColor: Colors.border,
+    padding: Spacing.lg,
     backgroundColor: Colors.card,
     gap: Spacing.sm,
   },
   roleCardSelected: {
     borderColor: Colors.primary,
     backgroundColor: Colors.primaryBg,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  roleIconWrapper: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  roleCardUnselected: {
+    borderColor: Colors.border,
+    backgroundColor: Colors.card,
+  },
+  roleCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  roleBadge: {
+    backgroundColor: Colors.secondary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  roleBadgeActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  roleBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.mutedForeground,
+  },
+  roleBadgeTextActive: {
+    color: Colors.white,
+  },
+  radioCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.sm,
+  },
+  radioCircleSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.white,
+  },
+  roleIconWrapper: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: Spacing.xs,
+  },
+  roleTextContainer: {
+    gap: 4,
   },
   roleTitle: {
-    fontSize: FontSize.lg,
-    fontWeight: '700',
+    fontSize: FontSize.lg + 1,
+    fontWeight: '800',
     color: Colors.foreground,
   },
   roleTitleUrdu: {
-    fontSize: FontSize.xl,
+    fontSize: FontSize.lg,
     fontWeight: '800',
     color: Colors.primary,
   },
   roleDesc: {
     fontSize: FontSize.sm,
     color: Colors.mutedForeground,
-    textAlign: 'center',
+    lineHeight: 20,
+  },
+  rolePerksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginTop: Spacing.xs,
+    paddingTop: Spacing.xs + 2,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  rolePerkItem: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.primaryDark,
   },
 
   // Language
   languageList: {
     gap: Spacing.md,
   },
-  languageButton: {
+  languageCard: {
     padding: Spacing.lg,
     borderRadius: Radius.xl,
     borderWidth: 2,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  languageCardSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryBg,
+  },
+  languageCardUnselected: {
+    borderColor: Colors.border,
+    backgroundColor: Colors.card,
+  },
+  languageCardLeft: {
+    gap: 4,
   },
   languageNative: {
-    fontSize: FontSize.lg,
-    fontWeight: '700',
+    fontSize: FontSize.xl,
+    fontWeight: '800',
     color: Colors.foreground,
   },
   languageName: {
     fontSize: FontSize.sm,
     color: Colors.mutedForeground,
-    marginTop: Spacing.xs,
+  },
+  languageCardRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  langBadge: {
+    backgroundColor: Colors.secondary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  langBadgeSelected: {
+    backgroundColor: Colors.white,
+    borderColor: '#BBF7D0',
+  },
+  langBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.mutedForeground,
   },
 
   // CNIC
@@ -792,11 +1143,16 @@ const styles = StyleSheet.create({
     padding: Spacing.xxxl,
     alignItems: 'center',
     gap: Spacing.md,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
   processingTitle: {
-    fontSize: FontSize.md,
+    fontSize: FontSize.md + 1,
     fontWeight: '700',
-    color: Colors.primary,
+    color: Colors.primaryDark,
     textAlign: 'center',
   },
   processingSub: {
@@ -809,6 +1165,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.xs,
+    marginTop: Spacing.xs,
   },
   footerText: {
     fontSize: FontSize.xs,
@@ -819,43 +1176,190 @@ const styles = StyleSheet.create({
   facePreview: {
     alignItems: 'center',
     gap: Spacing.lg,
+    width: '100%',
+  },
+  facePreviewWrapper: {
+    position: 'relative',
+    alignItems: 'center',
   },
   faceImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
     borderWidth: 3,
     borderColor: Colors.primary,
   },
-  faceVerifying: {
+  faceVerifiedBadge: {
+    position: 'absolute',
+    bottom: -6,
+    backgroundColor: Colors.primaryDark,
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
   },
-  faceActions: {
+  faceVerifiedBadgeText: {
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  actionRow: {
     flexDirection: 'row',
     gap: Spacing.md,
     width: '100%',
+    marginTop: Spacing.sm,
   },
-  faceCapture: {
+  faceCaptureContainer: {
     alignItems: 'center',
-    gap: Spacing.xl,
+    gap: Spacing.lg,
+    width: '100%',
   },
-  faceGuide: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    borderWidth: 3,
-    borderColor: Colors.border,
+  biometricPortal: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: Spacing.xs,
+  },
+  biometricOuterRing: {
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: Colors.primaryBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#BBF7D0',
+  },
+  biometricInnerRing: {
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    backgroundColor: Colors.white,
+    borderWidth: 2,
+    borderColor: Colors.primary,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  bracketTL: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    width: 20,
+    height: 20,
+    borderTopWidth: 3,
+    borderLeftWidth: 3,
+    borderColor: Colors.primary,
+    borderTopLeftRadius: 6,
+  },
+  bracketTR: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    width: 20,
+    height: 20,
+    borderTopWidth: 3,
+    borderRightWidth: 3,
+    borderColor: Colors.primary,
+    borderTopRightRadius: 6,
+  },
+  bracketBL: {
+    position: 'absolute',
+    bottom: 14,
+    left: 14,
+    width: 20,
+    height: 20,
+    borderBottomWidth: 3,
+    borderLeftWidth: 3,
+    borderColor: Colors.primary,
+    borderBottomLeftRadius: 6,
+  },
+  bracketBR: {
+    position: 'absolute',
+    bottom: 14,
+    right: 14,
+    width: 20,
+    height: 20,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderColor: Colors.primary,
+    borderBottomRightRadius: 6,
+  },
+  biometricStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.white,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginTop: -14,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  pulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.primary,
+  },
+  biometricStatusText: {
+    fontSize: FontSize.xs + 1,
+    fontWeight: '700',
+    color: Colors.foreground,
+  },
+  guidanceChipsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    flexWrap: 'wrap',
+  },
+  guidanceChip: {
+    backgroundColor: Colors.secondary,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  guidanceChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.mutedForeground,
+  },
+  selfieButtonStack: {
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
     gap: Spacing.sm,
   },
-  faceGuideText: {
-    fontSize: FontSize.sm,
-    color: Colors.mutedForeground,
-    textAlign: 'center',
-    paddingHorizontal: Spacing.md,
+  outlineUploadButton: {
+    width: '100%',
+    minHeight: 48,
+    backgroundColor: Colors.white,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: Radius.xl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  outlineUploadButtonText: {
+    color: Colors.foreground,
+    fontSize: FontSize.sm + 1,
+    fontWeight: '600',
   },
 
   // Phone
@@ -864,12 +1368,14 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   countryCode: {
-    backgroundColor: Colors.muted,
+    backgroundColor: Colors.secondary,
     padding: Spacing.md,
     borderRadius: Radius.lg,
     justifyContent: 'center',
     minWidth: 70,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   countryCodeText: {
     fontSize: FontSize.md,
@@ -878,7 +1384,7 @@ const styles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.border,
     borderRadius: Radius.lg,
     padding: Spacing.md,
@@ -889,6 +1395,7 @@ const styles = StyleSheet.create({
   otpSection: {
     gap: Spacing.lg,
     alignItems: 'center',
+    width: '100%',
   },
   otpLabel: {
     fontSize: FontSize.sm,
@@ -901,53 +1408,71 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   otpInput: {
-    width: 52,
-    height: 56,
-    borderWidth: 1,
+    width: 54,
+    height: 58,
+    borderWidth: 1.5,
     borderColor: Colors.border,
     borderRadius: Radius.lg,
     textAlign: 'center',
     fontSize: FontSize.xxl,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.foreground,
     backgroundColor: Colors.card,
   },
 
   // Buttons
   primaryButton: {
-    flex: 1,
+    width: '100%',
+    minHeight: 52,
     backgroundColor: Colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    paddingVertical: Spacing.lg,
+    paddingVertical: Spacing.md + 2,
+    paddingHorizontal: Spacing.lg,
     borderRadius: Radius.xl,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 4,
   },
   primaryButtonText: {
     color: Colors.white,
-    fontSize: FontSize.lg,
+    fontSize: FontSize.md + 1,
     fontWeight: '700',
   },
   secondaryButton: {
-    flex: 1,
+    width: '100%',
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    paddingVertical: Spacing.lg,
+    paddingVertical: Spacing.md + 2,
+    paddingHorizontal: Spacing.lg,
     borderRadius: Radius.xl,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.border,
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.white,
   },
   secondaryButtonText: {
     fontSize: FontSize.md,
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.foreground,
   },
-  disabledButton: {
-    opacity: 0.5,
+  flexBtn: {
+    flex: 1,
+    width: undefined,
+  },
+  disabledSubmitButton: {
+    backgroundColor: Colors.disabled,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  disabledSubmitButtonText: {
+    color: Colors.disabledText,
   },
   demoButton: {
     alignItems: 'center',
@@ -955,7 +1480,7 @@ const styles = StyleSheet.create({
   },
   demoButtonText: {
     color: Colors.primary,
-    fontSize: FontSize.md,
-    fontWeight: '600',
+    fontSize: FontSize.sm + 1,
+    fontWeight: '700',
   },
 });

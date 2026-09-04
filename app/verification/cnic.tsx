@@ -13,6 +13,7 @@ import { ShieldCheck, CheckCircle2, Lock, ArrowRight, AlertCircle } from 'lucide
 import { CNICUploadBox } from '@/components/verification/CNICUploadBox';
 import { CNICResultCard } from '@/components/verification/CNICResultCard';
 import { Button } from '@/components/ui/Button';
+import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
 import { useDemoAuth } from '@/services/auth/demoAuthContext';
 import { processCNICVerificationImage } from '@/services/gemini/cnicVerification';
 import { confirmUserIdentity } from '@/services/verification/identityService';
@@ -82,14 +83,14 @@ export default function CNICVerificationScreen() {
     return (
       <View style={styles.successContainer}>
         <View style={styles.successCard}>
-          <CheckCircle2 size={64} color="#0F5132" />
+          <CheckCircle2 size={64} color={Colors.primary} />
           <Text style={styles.successTitle}>🎉 Identity Verified!</Text>
           <Text style={styles.successSub}>
             Your identity has been successfully verified. You are now authorized to create and publish crop listings.
           </Text>
 
           <View style={styles.badgeBox}>
-            <ShieldCheck size={18} color="#0F5132" />
+            <ShieldCheck size={18} color={Colors.primary} />
             <Text style={styles.badgeText}>✓ Verified Seller Account</Text>
           </View>
 
@@ -107,7 +108,9 @@ export default function CNICVerificationScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <ShieldCheck size={36} color="#1b4332" />
+        <View style={styles.headerIconWrapper}>
+          <ShieldCheck size={32} color={Colors.primary} />
+        </View>
         <Text style={styles.titleUrdu}>اپنی شناخت کی تصدیق کریں</Text>
         <Text style={styles.titleEng}>Verify Your Identity</Text>
         <Text style={styles.explanation}>
@@ -118,7 +121,7 @@ export default function CNICVerificationScreen() {
       {/* Error Toast */}
       {errorMessage ? (
         <View style={styles.errorBox}>
-          <AlertCircle size={20} color="#DC2626" />
+          <AlertCircle size={20} color={Colors.error} />
           <Text style={styles.errorText}>{errorMessage}</Text>
         </View>
       ) : null}
@@ -126,7 +129,7 @@ export default function CNICVerificationScreen() {
       {/* Processing State */}
       {isProcessing ? (
         <View style={styles.processingCard}>
-          <ActivityIndicator size="large" color="#1b4332" />
+          <ActivityIndicator size="large" color={Colors.primary} />
           <Text style={styles.processingTitle}>AI Analyzing CNIC Document...</Text>
           <Text style={styles.processingSub}>
             Extracting identity details securely using multimodal vision OCR
@@ -176,59 +179,75 @@ export default function CNICVerificationScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: '#F8FAFC',
+    padding: Spacing.lg,
+    backgroundColor: Colors.background,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 6,
+    marginBottom: Spacing.lg,
+    gap: Spacing.xs,
+  },
+  headerIconWrapper: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.primaryBg,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
   },
   titleUrdu: {
-    fontSize: 22,
+    fontSize: FontSize.xxl,
     fontWeight: '800',
-    color: '#0F172A',
-    marginTop: 6,
+    color: Colors.foreground,
   },
   titleEng: {
-    fontSize: 16,
+    fontSize: FontSize.md,
     fontWeight: '700',
-    color: '#1b4332',
+    color: Colors.primary,
   },
   explanation: {
-    fontSize: 13,
-    color: '#64748B',
+    fontSize: FontSize.sm,
+    color: Colors.mutedForeground,
     textAlign: 'center',
     marginTop: 4,
     lineHeight: 18,
   },
   stepBox: {
-    gap: 12,
+    gap: Spacing.md,
   },
   submitBtn: {
-    backgroundColor: '#1b4332',
+    backgroundColor: Colors.primary,
     paddingVertical: 14,
-    marginTop: 10,
+    borderRadius: Radius.xl,
+    marginTop: 6,
   },
   processingCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
     borderWidth: 1.5,
-    borderColor: '#1b4332',
+    borderColor: '#BBF7D0',
     padding: 30,
     alignItems: 'center',
     gap: 12,
     marginVertical: 20,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
   processingTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#1b4332',
+    color: Colors.primaryDark,
     textAlign: 'center',
   },
   processingSub: {
     fontSize: 13,
-    color: '#64748B',
+    color: Colors.mutedForeground,
     textAlign: 'center',
   },
   errorBox: {
@@ -238,7 +257,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FECACA',
     padding: 12,
-    borderRadius: 10,
+    borderRadius: Radius.lg,
     gap: 10,
     marginBottom: 14,
   },
@@ -258,34 +277,39 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: '#64748B',
+    color: Colors.mutedForeground,
   },
   successContainer: {
     flex: 1,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: Colors.primaryBg,
     padding: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
   successCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xxl,
     padding: 24,
     width: '100%',
     alignItems: 'center',
     gap: 14,
     borderWidth: 1.5,
-    borderColor: '#86EFAC',
+    borderColor: '#BBF7D0',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
   },
   successTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#0F5132',
+    color: Colors.primaryDark,
     textAlign: 'center',
   },
   successSub: {
     fontSize: 14,
-    color: '#1b4332',
+    color: Colors.foreground,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -293,19 +317,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#D1E7DD',
+    backgroundColor: Colors.primaryBg,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
   },
   badgeText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0F5132',
+    color: Colors.primaryDark,
   },
   continueBtn: {
-    backgroundColor: '#1b4332',
+    backgroundColor: Colors.primary,
     width: '100%',
+    borderRadius: Radius.xl,
     marginTop: 10,
   },
 });

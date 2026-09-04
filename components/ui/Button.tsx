@@ -1,6 +1,8 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
 
+import { Colors, Radius } from '@/constants/theme';
+
 interface ButtonProps {
   title: string;
   onPress: () => void;
@@ -25,21 +27,23 @@ export const Button: React.FC<ButtonProps> = ({
   icon,
 }) => {
   const getBackgroundColor = () => {
-    if (disabled) return '#CCCCCC';
+    if (disabled) return '#E2E8F0';
     switch (variant) {
-      case 'primary': return '#1b4332';
-      case 'secondary': return '#40916c';
+      case 'primary': return Colors.primary;
+      case 'secondary': return Colors.primaryBg;
       case 'outline': return 'transparent';
-      case 'danger': return '#d90429';
-      default: return '#1b4332';
+      case 'danger': return Colors.error;
+      default: return Colors.primary;
     }
   };
 
   const getTextColor = () => {
-    if (disabled) return '#888888';
+    if (disabled) return '#94A3B8';
     switch (variant) {
-      case 'outline': return '#1b4332';
-      default: return '#FFFFFF';
+      case 'outline': return Colors.primary;
+      case 'secondary': return Colors.primary;
+      case 'danger': return Colors.white;
+      default: return Colors.white;
     }
   };
 
@@ -51,11 +55,12 @@ export const Button: React.FC<ButtonProps> = ({
         styles.button,
         { backgroundColor: getBackgroundColor() },
         variant === 'outline' && styles.outlineBorder,
+        variant === 'primary' && !disabled && styles.primaryShadow,
         size === 'small' && styles.small,
         size === 'large' && styles.large,
         style,
       ]}
-      activeOpacity={0.8}
+      activeOpacity={0.85}
     >
       {loading ? (
         <ActivityIndicator color={getTextColor()} />
@@ -83,21 +88,28 @@ const styles = StyleSheet.create({
   },
   outlineBorder: {
     borderWidth: 1.5,
-    borderColor: '#1b4332',
+    borderColor: Colors.primary,
+  },
+  primaryShadow: {
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
   },
   small: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: Radius.md,
   },
   large: {
     paddingVertical: 16,
     paddingHorizontal: 24,
-    borderRadius: 12,
+    borderRadius: Radius.xl,
   },
   text: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   smallText: {
     fontSize: 13,
