@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "AgroEndure",
+    "slug": "agroendure",
+    "version": "1.0.0",
+    "scheme": "agroendure",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#1b4332"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.agroendure.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "AgroEndure needs microphone access for voice-powered crop listings.",
+        "NSCameraUsageDescription": "AgroEndure needs camera access for CNIC verification and crop photos."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1b4332"
+      },
+      "package": "com.agroendure.app",
+      "permissions": ["RECORD_AUDIO", "CAMERA"]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "AgroEndure needs access to your photos for crop listings and CNIC verification."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

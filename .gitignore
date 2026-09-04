@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Expo & Metro
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Legacy / Nested sub-repos
+agoroendure-antigravity-repo/
+agroendure-expo-legacy/
+agroendure-vite-legacy/
+
+# Native builds
+android/
+ios/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# OS & Temp
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
