@@ -16,9 +16,11 @@ import {
   Bot,
   CheckCircle2,
   ArrowRight,
+  ArrowLeft,
   TrendingUp,
   Sparkles,
   Camera,
+  ShieldCheck,
 } from 'lucide-react-native';
 import { WizardStepIndicator } from '@/components/listing/WizardStepIndicator';
 import { VoiceInputButton } from '@/components/listing/VoiceInputButton';
@@ -235,29 +237,25 @@ export default function VoiceListing() {
   };
 
   const renderAiHeader = (stepIdx: number) => (
-    <View style={styles.aiHeader}>
-      <View style={styles.aiIconCircle}>
-        <Bot size={22} color={Colors.white} />
+    <View style={[styles.aiHeader, Shadows.soft]}>
+      <View style={styles.aiBadgePill}>
+        <Sparkles size={13} color={Colors.primary} />
+        <Text style={styles.aiBadgeText}>AGROENDURE AI اسسٹنٹ</Text>
       </View>
-      <View style={styles.aiHeaderTexts}>
-        <Text style={styles.aiTitle}>
-          <Sparkles size={12} color={Colors.primary} /> AgroEndure AI لسٹنگ اسسٹنٹ
-        </Text>
-        <Text style={styles.stepTitleUrdu}>{AI_STEPS[stepIdx].titleUrdu}</Text>
-        <Text style={styles.stepTitleEng}>{AI_STEPS[stepIdx].titleEng}</Text>
-      </View>
+      <Text style={styles.stepTitleUrdu}>{AI_STEPS[stepIdx].titleUrdu}</Text>
+      <Text style={styles.stepTitleEng}>{AI_STEPS[stepIdx].titleEng}</Text>
     </View>
   );
 
   const renderTextInputRow = (stepIdx: number) => (
-    <>
+    <View style={styles.textSection}>
       <View style={styles.orDivider}>
         <View style={styles.line} />
-        <Text style={styles.orText}>یا لکھ کر بتائیں</Text>
+        <Text style={styles.orText}>یا کی بورڈ سے لکھیں (Type Below)</Text>
         <View style={styles.line} />
       </View>
 
-      <View style={styles.textInputRow}>
+      <View style={styles.textInputCard}>
         <TextInput
           style={styles.textInput}
           placeholder={AI_STEPS[stepIdx].placeholder}
@@ -265,16 +263,22 @@ export default function VoiceListing() {
           value={inputText}
           onChangeText={setInputText}
           onSubmitEditing={() => handleProcessInput(inputText)}
+          returnKeyType="done"
         />
         <TouchableOpacity
-          style={styles.sendBtn}
+          style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}
           onPress={() => handleProcessInput(inputText)}
-          disabled={isProcessing}
+          disabled={isProcessing || !inputText.trim()}
+          activeOpacity={0.8}
         >
-          <ArrowRight size={18} color={Colors.white} />
+          {isProcessing ? (
+            <ActivityIndicator size="small" color={Colors.white} />
+          ) : (
+            <ArrowRight size={18} color={Colors.white} strokeWidth={2.5} />
+          )}
         </TouchableOpacity>
       </View>
-    </>
+    </View>
   );
 
   const renderAiStep = (stepIdx: number) => {
@@ -285,7 +289,7 @@ export default function VoiceListing() {
       <View style={styles.stepContainer}>
         {renderAiHeader(stepIdx)}
 
-        <View style={styles.voiceBox}>
+        <View style={[styles.voiceStudioBox, Shadows.soft]}>
           <VoiceInputButton
             onSpeechCompleted={handleVoiceCompleted}
             isProcessing={isProcessing}
@@ -299,10 +303,10 @@ export default function VoiceListing() {
           <DetectionCard
             title={
               stepIdx === 0
-                ? '🌾 فصل کا نام'
+                ? '🌾 فصل کی تفصیل'
                 : stepIdx === 1
-                ? '📦 مقدار'
-                : '⭐ کوالٹی'
+                ? '📦 مقدار اور پیمانہ'
+                : '⭐ کوالٹی گریڈ'
             }
             detectedValue={response.display_value ?? ''}
             originalText={
@@ -328,19 +332,26 @@ export default function VoiceListing() {
         images={images}
         onAddImage={handleAddPhoto}
         onRemoveImage={handleRemovePhoto}
+        onAddDemoPhotos={addDemoPhotos}
       />
 
       <View style={styles.navButtons}>
-        <TouchableOpacity style={styles.backButton} onPress={() => setStep(3)}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => setStep(3)}
+          activeOpacity={0.7}
+        >
+          <ArrowLeft size={16} color={Colors.foreground} />
           <Text style={styles.backButtonText}>واپس</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.nextButton, images.length === 0 && styles.disabledButton]}
           onPress={() => setStep(5)}
           disabled={images.length === 0}
+          activeOpacity={0.85}
         >
-          <Text style={styles.nextButtonText}>آگے</Text>
-          <ArrowRight size={16} color={Colors.white} />
+          <Text style={styles.nextButtonText}>آگے بڑھیں (قیمت کا مرحلہ)</Text>
+          <ArrowRight size={16} color={Colors.white} strokeWidth={2.5} />
         </TouchableOpacity>
       </View>
     </View>
@@ -348,31 +359,71 @@ export default function VoiceListing() {
 
   const renderPriceStep = () => (
     <View style={styles.stepContainer}>
-      <Text style={styles.previewHeading}>آپ کی لسٹنگ کا جائزہ</Text>
+      <View style={styles.reviewBanner}>
+        <ShieldCheck size={18} color={Colors.primary} />
+        <Text style={styles.previewHeading}>آپ کی لسٹنگ کا حتمی جائزہ</Text>
+      </View>
 
+      {/* Modern Listing Preview Card */}
       <View style={[styles.previewCard, Shadows.soft]}>
         {images[0] ? (
-          <Image source={{ uri: images[0].uri }} style={styles.previewImage} />
-        ) : null}
+          <Image source={{ uri: images[0].uri }} style={styles.previewImage} resizeMode="cover" />
+        ) : (
+          <View style={styles.previewPlaceholder}>
+            <Camera size={32} color={Colors.mutedForeground} />
+            <Text style={styles.previewPlaceholderText}>کوئی تصویر منسلک نہیں کی گئی</Text>
+          </View>
+        )}
 
         <View style={styles.previewBody}>
-          <Text style={styles.previewTitle}>🌾 {cropName || 'فصل'}</Text>
-          <Text style={styles.previewQty}>
-            📦 مقدار: {quantityStr || `${quantityNum} ${quantityUnit}`}
-          </Text>
-          <Text style={styles.previewQuality}>⭐ کوالٹی: {qualityStr || 'Grade A'}</Text>
-          <Text style={styles.previewSeller}>👤 کسان: {activeUser?.full_name ?? 'ڈیمو کسان'}</Text>
+          <View style={styles.previewTitleRow}>
+            <Text style={styles.previewTitle}>{cropName || 'فصل'}</Text>
+            <View style={styles.previewLiveBadge}>
+              <Text style={styles.previewLiveBadgeText}>پیش نظارہ</Text>
+            </View>
+          </View>
+
+          {/* Structured Table to prevent any RTL/LTR jumbling */}
+          <View style={styles.specsTable}>
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>مقدار (Quantity)</Text>
+              <Text style={styles.specValue}>{quantityStr || `${quantityNum} ${quantityUnit}`}</Text>
+            </View>
+            <View style={styles.specDivider} />
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>کوالٹی (Quality)</Text>
+              <View style={styles.qualityPill}>
+                <Text style={styles.qualityPillText}>{qualityStr || 'Grade A'}</Text>
+              </View>
+            </View>
+            <View style={styles.specDivider} />
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>کسان (Seller)</Text>
+              <Text style={styles.specValue}>{activeUser?.full_name ?? 'ڈیمو کسان'}</Text>
+            </View>
+          </View>
         </View>
       </View>
 
-      <View style={styles.voiceBox}>
+      {/* AI Price Recommendation Card */}
+      <View style={[styles.aiPriceCard, Shadows.soft]}>
         <View style={styles.aiPriceHeader}>
-          <TrendingUp size={18} color={Colors.primary} />
-          <Text style={styles.aiPriceTitle}>AI تجویز کردہ قیمت</Text>
+          <View style={styles.trendingIconBox}>
+            <TrendingUp size={20} color={Colors.primary} />
+          </View>
+          <View style={styles.aiPriceHeaderTextGroup}>
+            <Text style={styles.aiPriceTitle}>AI تجویز کردہ مارکیٹ ریٹ</Text>
+            <Text style={styles.aiPriceSubTitle}>AI Recommended Market Price</Text>
+          </View>
         </View>
 
-        <View style={styles.priceDisplay}>
-          <Text style={styles.priceCurrency}>Rs</Text>
+        {/* Clean, spacious Price Input Widget */}
+        <View style={styles.priceInputCapsule}>
+          <View style={styles.currencyBadge}>
+            <Text style={styles.currencySymbol}>PKR</Text>
+            <Text style={styles.currencyUrdu}>روپے</Text>
+          </View>
+
           <TextInput
             style={styles.priceInput}
             value={price}
@@ -384,27 +435,43 @@ export default function VoiceListing() {
             placeholder="6000"
             placeholderTextColor={Colors.mutedForeground}
           />
-          <Text style={styles.priceUnit}>فی {quantityUnit}</Text>
+
+          <View style={styles.unitBadge}>
+            <Text style={styles.unitText}>فی {quantityUnit}</Text>
+          </View>
         </View>
 
-        <Text style={styles.priceHint}>
-          مارکیٹ کی موجودہ قیمتوں اور آپ کی کوالٹی کے مطابق AI نے یہ قیمت تجویز کی ہے۔ آپ اسے تبدیل کر سکتے ہیں۔
-        </Text>
+        <View style={styles.marketInsightBox}>
+          <Text style={styles.priceHint}>
+            💡 مارکیٹ میں اس کوالٹی کی اوسط قیمتوں کے تجزیے سے یہ ریٹ تجویز کیا گیا ہے۔ آپ اپنی مرضی سے اسے بدل سکتے ہیں۔
+          </Text>
+        </View>
       </View>
 
+      {/* Actions */}
       <View style={styles.navButtons}>
-        <TouchableOpacity style={styles.backButton} onPress={() => setStep(4)}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => setStep(4)}
+          activeOpacity={0.7}
+        >
+          <ArrowLeft size={16} color={Colors.foreground} />
           <Text style={styles.backButtonText}>واپس</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.publishButton, isPublishing && styles.disabledButton]}
           onPress={handlePublishListing}
           disabled={isPublishing}
+          activeOpacity={0.85}
         >
           {isPublishing ? (
             <ActivityIndicator size="small" color={Colors.white} />
           ) : (
-            <Text style={styles.publishButtonText}>🚀 لسٹنگ پبلش کریں</Text>
+            <>
+              <CheckCircle2 size={18} color={Colors.white} strokeWidth={2.5} />
+              <Text style={styles.publishButtonText}>لسٹنگ پبلش کریں 🚀</Text>
+            </>
           )}
         </TouchableOpacity>
       </View>
@@ -417,25 +484,36 @@ export default function VoiceListing() {
       <SafeAreaView style={styles.successScreen}>
         <ScrollView contentContainerStyle={styles.successContent}>
           <View style={[styles.successCard, Shadows.soft]}>
-            <CheckCircle2 size={64} color={Colors.success} />
-            <Text style={styles.successTitle}>آپ کی لسٹنگ لائیو ہو گئی! 🎉</Text>
+            <View style={styles.successIconCircle}>
+              <CheckCircle2 size={54} color={Colors.primary} strokeWidth={2.5} />
+            </View>
+
+            <Text style={styles.successTitle}>آپ کی فصل لائیو ہو گئی! 🎉</Text>
             <Text style={styles.successSub}>
-              آپ کی فصل اب مارکیٹ پلیس میں خریداروں کو نظر آ رہی ہے۔
+              آپ کی لسٹنگ کامیابی سے مارکیٹ پلیس میں شامل کر دی گئی ہے اور اب تمام خریداروں کو نظر آ رہی ہے۔
             </Text>
 
             <View style={styles.successSummaryBox}>
               <Text style={styles.summaryItemTitle}>🌾 {cropName || 'فصل'}</Text>
-              <Text style={styles.summaryItemSub}>
-                📦 {quantityStr || `${quantityNum} ${quantityUnit}`} • ⭐{' '}
-                {qualityStr || 'Grade A'} • Rs {price}/{quantityUnit}
-              </Text>
+              <View style={styles.summaryBadgesRow}>
+                <View style={styles.summaryTag}>
+                  <Text style={styles.summaryTagText}>{quantityStr || `${quantityNum} ${quantityUnit}`}</Text>
+                </View>
+                <View style={styles.summaryTag}>
+                  <Text style={styles.summaryTagText}>{qualityStr || 'Grade A'}</Text>
+                </View>
+                <View style={[styles.summaryTag, styles.summaryPriceTag]}>
+                  <Text style={styles.summaryPriceTagText}>Rs {price} / {quantityUnit}</Text>
+                </View>
+              </View>
             </View>
 
             <TouchableOpacity
               style={styles.successBtn}
               onPress={() => router.replace('/(tabs)/browse')}
+              activeOpacity={0.85}
             >
-              <Text style={styles.successBtnText}>مارکیٹ پلیس دیکھیں</Text>
+              <Text style={styles.successBtnText}>مارکیٹ پلیس میں دیکھیں</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -454,8 +532,9 @@ export default function VoiceListing() {
                 setPrice('6000');
                 setPriceTouched(false);
               }}
+              activeOpacity={0.7}
             >
-              <Text style={styles.newListingBtnText}>+ نئی لسٹنگ بنائیں</Text>
+              <Text style={styles.newListingBtnText}>+ نئی فصل کی لسٹنگ بنائیں</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -484,70 +563,74 @@ export default function VoiceListing() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F8FAFC',
   },
   scrollContent: {
     padding: Spacing.lg,
     paddingBottom: 100,
   },
   stepContainer: {
-    gap: Spacing.xl,
+    gap: Spacing.lg,
   },
 
   // AI header bubble
   aiHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.card,
     padding: Spacing.lg,
     borderRadius: Radius.xl,
-    borderWidth: 1,
-    borderColor: Colors.primaryLight,
-    gap: Spacing.md,
+    borderWidth: 1.5,
+    borderColor: '#BBF7D0',
+    gap: 6,
   },
-  aiIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.primary,
+  aiBadgePill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.primaryBg,
+    alignSelf: 'flex-start',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
   },
-  aiHeaderTexts: {
-    flex: 1,
-    gap: Spacing.xs,
-  },
-  aiTitle: {
+  aiBadgeText: {
     fontSize: FontSize.xs,
     fontWeight: '800',
     color: Colors.primary,
-    textTransform: 'uppercase',
   },
   stepTitleUrdu: {
     fontSize: FontSize.xl,
     fontWeight: '800',
     color: Colors.foreground,
+    marginTop: 4,
+    letterSpacing: -0.2,
   },
   stepTitleEng: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     color: Colors.mutedForeground,
     fontStyle: 'italic',
   },
 
-  // Voice box
-  voiceBox: {
+  // Voice studio container
+  voiceStudioBox: {
     alignItems: 'center',
-    backgroundColor: Colors.gradientVoiceEnd,
-    borderRadius: Radius.xl,
+    backgroundColor: Colors.card,
+    borderRadius: Radius.xxl,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
     padding: Spacing.lg,
     width: '100%',
   },
 
-  // Text input
+  // Text input section
+  textSection: {
+    gap: Spacing.sm,
+  },
   orDivider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: Spacing.xs,
+    marginVertical: 2,
   },
   line: {
     flex: 1,
@@ -555,175 +638,316 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
   },
   orText: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     fontWeight: '700',
     color: Colors.mutedForeground,
     marginHorizontal: Spacing.md,
   },
-  textInputRow: {
+  textInputCard: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    alignItems: 'center',
+    backgroundColor: Colors.card,
+    borderRadius: Radius.xl,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
   },
   textInput: {
     flex: 1,
-    backgroundColor: Colors.muted,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    fontSize: FontSize.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    fontSize: FontSize.md,
     color: Colors.foreground,
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   sendBtn: {
     backgroundColor: Colors.primary,
-    width: 48,
-    borderRadius: Radius.md,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  sendBtnDisabled: {
+    backgroundColor: Colors.border,
   },
 
   // Nav buttons
   navButtons: {
     flexDirection: 'row',
     gap: Spacing.md,
+    alignItems: 'center',
+    marginTop: Spacing.xs,
   },
   backButton: {
     flex: 1,
-    paddingVertical: Spacing.md,
-    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 14,
+    borderWidth: 1.5,
     borderColor: Colors.border,
     borderRadius: Radius.xl,
-    alignItems: 'center',
+    backgroundColor: Colors.card,
   },
   backButtonText: {
     fontSize: FontSize.md,
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.foreground,
   },
   nextButton: {
-    flex: 1,
+    flex: 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
     backgroundColor: Colors.primary,
-    paddingVertical: Spacing.md,
+    paddingVertical: 14,
     borderRadius: Radius.xl,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   nextButtonText: {
     color: Colors.white,
     fontSize: FontSize.md,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   disabledButton: {
     opacity: 0.5,
   },
 
-  // Preview / price step
+  // Preview & Price Step
+  reviewBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.primaryBg,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
   previewHeading: {
     fontSize: FontSize.md,
     fontWeight: '800',
     color: Colors.primary,
-    textAlign: 'center',
   },
   previewCard: {
     backgroundColor: Colors.card,
     borderRadius: Radius.xl,
     borderWidth: 1.5,
-    borderColor: Colors.primary,
+    borderColor: '#BBF7D0',
     overflow: 'hidden',
   },
   previewImage: {
     width: '100%',
-    height: 160,
+    height: 170,
+  },
+  previewPlaceholder: {
+    width: '100%',
+    height: 140,
+    backgroundColor: Colors.muted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  previewPlaceholderText: {
+    fontSize: FontSize.xs,
+    color: Colors.mutedForeground,
   },
   previewBody: {
     padding: Spacing.lg,
-    gap: Spacing.xs,
+    gap: Spacing.md,
+  },
+  previewTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   previewTitle: {
-    fontSize: FontSize.xl,
+    fontSize: 22,
+    fontWeight: '900',
+    color: Colors.foreground,
+  },
+  previewLiveBadge: {
+    backgroundColor: Colors.primaryBg,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  previewLiveBadgeText: {
+    fontSize: FontSize.xs,
+    fontWeight: '800',
+    color: Colors.primary,
+  },
+  specsTable: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 8,
+  },
+  specRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  specLabel: {
+    fontSize: FontSize.sm,
+    color: Colors.mutedForeground,
+    fontWeight: '600',
+  },
+  specValue: {
+    fontSize: FontSize.sm,
     fontWeight: '800',
     color: Colors.foreground,
   },
-  previewQty: {
-    fontSize: FontSize.md,
-    fontWeight: '700',
+  specDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  qualityPill: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+  },
+  qualityPillText: {
+    fontSize: FontSize.xs,
+    fontWeight: '800',
     color: Colors.primary,
   },
-  previewQuality: {
-    fontSize: FontSize.md,
-    fontWeight: '600',
-    color: Colors.success,
-  },
-  previewSeller: {
-    fontSize: FontSize.sm,
-    color: Colors.mutedForeground,
-    marginTop: Spacing.xs,
+
+  // AI Price card
+  aiPriceCard: {
+    backgroundColor: Colors.card,
+    borderRadius: Radius.xl,
+    borderWidth: 1.5,
+    borderColor: '#BBF7D0',
+    padding: Spacing.lg,
+    gap: Spacing.md,
   },
   aiPriceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
   },
+  trendingIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.primaryBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  aiPriceHeaderTextGroup: {
+    flex: 1,
+  },
   aiPriceTitle: {
     fontSize: FontSize.md,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.foreground,
   },
-  priceDisplay: {
+  aiPriceSubTitle: {
+    fontSize: FontSize.xs,
+    color: Colors.mutedForeground,
+  },
+  priceInputCapsule: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
-    marginVertical: Spacing.md,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    borderRadius: Radius.xl,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    justifyContent: 'space-between',
   },
-  priceCurrency: {
-    fontSize: FontSize.xl,
+  currencyBadge: {
+    alignItems: 'center',
+    paddingRight: Spacing.sm,
+  },
+  currencySymbol: {
+    fontSize: FontSize.xs,
     fontWeight: '800',
+    color: Colors.mutedForeground,
+  },
+  currencyUrdu: {
+    fontSize: 10,
     color: Colors.primary,
+    fontWeight: '700',
   },
   priceInput: {
+    flex: 1,
+    fontSize: 32,
+    fontWeight: '900',
+    color: Colors.primary,
+    textAlign: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  unitBadge: {
     backgroundColor: Colors.card,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  unitText: {
+    fontSize: FontSize.xs,
+    fontWeight: '800',
+    color: Colors.foreground,
+  },
+  marketInsightBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: Radius.md,
+    padding: Spacing.sm,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    fontSize: 28,
-    fontWeight: '800',
-    color: Colors.primary,
-    minWidth: 140,
-    textAlign: 'center',
-  },
-  priceUnit: {
-    fontSize: FontSize.sm,
-    color: Colors.mutedForeground,
   },
   priceHint: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     color: Colors.mutedForeground,
-    textAlign: 'center',
     lineHeight: 18,
+    textAlign: 'center',
   },
   publishButton: {
-    flex: 1,
-    backgroundColor: Colors.success,
-    paddingVertical: Spacing.md,
+    flex: 2,
+    flexDirection: 'row',
+    gap: 8,
+    backgroundColor: Colors.primary,
+    paddingVertical: 14,
     borderRadius: Radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   publishButtonText: {
     color: Colors.white,
     fontSize: FontSize.md,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 
-  // Success screen
+  // Success Screen
   successScreen: {
     flex: 1,
-    backgroundColor: Colors.accent,
+    backgroundColor: '#F8FAFC',
   },
   successContent: {
     padding: Spacing.xl,
@@ -738,53 +962,95 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.md,
     borderWidth: 1.5,
-    borderColor: Colors.primaryLight,
+    borderColor: '#BBF7D0',
+  },
+  successIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.primaryBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#BBF7D0',
+    marginBottom: Spacing.xs,
   },
   successTitle: {
-    fontSize: FontSize.xxl,
-    fontWeight: '800',
-    color: Colors.success,
+    fontSize: 22,
+    fontWeight: '900',
+    color: Colors.foreground,
     textAlign: 'center',
   },
   successSub: {
-    fontSize: FontSize.md,
-    color: Colors.foreground,
+    fontSize: FontSize.sm,
+    color: Colors.mutedForeground,
     textAlign: 'center',
     lineHeight: 20,
   },
   successSummaryBox: {
-    backgroundColor: Colors.muted,
+    backgroundColor: '#F8FAFC',
     padding: Spacing.lg,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.xl,
     width: '100%',
     alignItems: 'center',
-    gap: Spacing.xs,
+    gap: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   summaryItemTitle: {
     fontSize: FontSize.xl,
-    fontWeight: '800',
+    fontWeight: '900',
     color: Colors.foreground,
   },
-  summaryItemSub: {
-    fontSize: FontSize.md,
-    color: Colors.mutedForeground,
+  summaryBadgesRow: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  summaryTag: {
+    backgroundColor: Colors.card,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  summaryTagText: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+    color: Colors.foreground,
+  },
+  summaryPriceTag: {
+    backgroundColor: Colors.primaryBg,
+    borderColor: '#BBF7D0',
+  },
+  summaryPriceTagText: {
+    fontSize: FontSize.xs,
+    fontWeight: '800',
+    color: Colors.primary,
   },
   successBtn: {
     backgroundColor: Colors.primary,
     width: '100%',
-    paddingVertical: Spacing.md,
+    paddingVertical: 14,
     borderRadius: Radius.lg,
     alignItems: 'center',
     marginTop: Spacing.sm,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   successBtnText: {
     color: Colors.white,
     fontSize: FontSize.md,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   newListingBtn: {
     alignItems: 'center',
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
   newListingBtnText: {
     color: Colors.primary,

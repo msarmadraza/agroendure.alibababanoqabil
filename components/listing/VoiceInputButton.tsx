@@ -116,43 +116,83 @@ export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
     <View style={styles.container}>
       {isProcessing ? (
         <View style={styles.processingBox}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.processingText}>AI آپ کی آواز تجزیہ کر رہا ہے...</Text>
+          <View style={styles.processingSpinnerContainer}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+          </View>
+          <Text style={styles.processingTitle}>AI تجزیہ جاری ہے...</Text>
+          <Text style={styles.processingSub}>آپ کی آواز سے معلومات حاصل کی جا رہی ہیں</Text>
         </View>
       ) : isRecording ? (
-        <View style={styles.recordingContainer}>
+        <View style={[styles.recordingContainer, Shadows.medium]}>
           <View style={styles.recordingHeader}>
-            <View style={styles.redDot} />
-            <Text style={styles.recordingTitle}>آپ کی آواز سن رہا ہے...</Text>
-            <Text style={styles.recordingTimer}>{formatTimer(recordingSeconds)}</Text>
+            <View style={styles.pulsingRedDot} />
+            <Text style={styles.recordingTitle}>سن رہا ہے (Listening...)</Text>
+            <View style={styles.timerPill}>
+              <Text style={styles.recordingTimer}>{formatTimer(recordingSeconds)}</Text>
+            </View>
+          </View>
+
+          {/* Soundwave representation */}
+          <View style={styles.waveRow}>
+            {[8, 18, 30, 22, 36, 26, 14, 28, 12].map((height, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.waveBar,
+                  styles.waveBarActive,
+                  { height: Math.max(6, (height * (1 + (recordingSeconds % 3) * 0.2))) },
+                ]}
+              />
+            ))}
           </View>
 
           {liveTranscript ? (
-            <Text style={styles.liveTranscriptText}>"{liveTranscript}"</Text>
+            <View style={styles.liveTranscriptCard}>
+              <Text style={styles.liveTranscriptText}>"{liveTranscript}"</Text>
+            </View>
           ) : (
-            <Text style={styles.listeningHint}>ابھی بولیں — فصل، مقدار یا کوالٹی بتائیں...</Text>
+            <Text style={styles.listeningHint}>ابھی بولیں — مثلاً فصل، مقدار، یا کوالٹی بتائیں...</Text>
           )}
 
           <TouchableOpacity
             style={styles.stopBtn}
             onPress={handleStopRecording}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <Square size={20} color={Colors.white} />
-            <Text style={styles.stopText}>رکیں اور تجزیہ کریں</Text>
+            <Square size={18} color={Colors.white} fill={Colors.white} />
+            <Text style={styles.stopText}>مکمل کریں اور تجزیہ کروائیں</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <TouchableOpacity
-          style={styles.micButton}
+          style={styles.micInteractiveArea}
           onPress={handleStartRecording}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
-          <View style={[styles.micInner, Shadows.medium]}>
-            <Mic size={36} color={Colors.white} />
+          {/* Concentric Acoustic Rings */}
+          <View style={styles.outerRing}>
+            <View style={styles.middleRing}>
+              <View style={[styles.innerCore, Shadows.medium]}>
+                <Mic size={36} color={Colors.white} />
+              </View>
+            </View>
           </View>
-          <Text style={styles.tapText}>دبائیں اور بولیں</Text>
-          {stepPromptHint ? <Text style={styles.hintSubText}>{stepPromptHint}</Text> : null}
+
+          {/* Equalizer Visualizer preview */}
+          <View style={styles.equalizerRow}>
+            {[10, 16, 22, 14, 26, 18, 12].map((height, i) => (
+              <View key={i} style={[styles.waveBar, { height }]} />
+            ))}
+          </View>
+
+          <Text style={styles.tapPrompt}>دبائیں اور اپنی زبان میں بولیں</Text>
+          <Text style={styles.langSupportText}>اردو • Punjabi • English</Text>
+
+          {stepPromptHint ? (
+            <View style={styles.hintBadge}>
+              <Text style={styles.hintSubText}>{stepPromptHint}</Text>
+            </View>
+          ) : null}
         </TouchableOpacity>
       )}
     </View>
@@ -163,86 +203,174 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: Spacing.lg,
+    width: '100%',
+    paddingVertical: Spacing.sm,
   },
-  micButton: {
+  micInteractiveArea: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
+    width: '100%',
   },
-  micInner: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: Colors.primary,
+  outerRing: {
+    width: 124,
+    height: 124,
+    borderRadius: 62,
+    backgroundColor: '#DCFCE7',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tapText: {
+  middleRing: {
+    width: 98,
+    height: 98,
+    borderRadius: 49,
+    backgroundColor: '#BBF7D0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  innerCore: {
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  equalizerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    height: 30,
+    marginTop: 2,
+  },
+  waveBar: {
+    width: 3.5,
+    borderRadius: 2,
+    backgroundColor: '#86EFAC',
+  },
+  waveBarActive: {
+    backgroundColor: '#EF4444',
+  },
+  tapPrompt: {
     fontSize: FontSize.lg,
     fontWeight: '800',
+    color: Colors.foreground,
+    letterSpacing: -0.2,
+  },
+  langSupportText: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
     color: Colors.primary,
+    backgroundColor: Colors.primaryBg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  hintBadge: {
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    maxWidth: '90%',
   },
   hintSubText: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     color: Colors.mutedForeground,
-    fontStyle: 'italic',
     textAlign: 'center',
   },
   recordingContainer: {
     alignItems: 'center',
-    backgroundColor: Colors.errorBg,
+    backgroundColor: '#FFF1F2',
     padding: Spacing.xl,
-    borderRadius: Radius.xl,
+    borderRadius: Radius.xxl,
     borderWidth: 1.5,
-    borderColor: Colors.error,
+    borderColor: '#FECDD3',
     width: '100%',
     gap: Spacing.md,
   },
   recordingHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    justifyContent: 'space-between',
+    width: '100%',
   },
-  redDot: {
+  pulsingRedDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: Colors.error,
+    backgroundColor: '#E11D48',
   },
   recordingTitle: {
-    fontSize: FontSize.lg,
+    fontSize: FontSize.md,
     fontWeight: '800',
-    color: Colors.error,
-  },
-  recordingTimer: {
-    fontSize: FontSize.lg,
-    fontWeight: '800',
-    color: Colors.error,
+    color: '#9F1239',
+    flex: 1,
     marginLeft: Spacing.sm,
   },
+  timerPill: {
+    backgroundColor: '#FFE4E6',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: '#FDA4AF',
+  },
+  recordingTimer: {
+    fontSize: FontSize.sm,
+    fontWeight: '800',
+    color: '#E11D48',
+  },
+  waveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    height: 44,
+  },
+  liveTranscriptCard: {
+    backgroundColor: Colors.card,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: '#FECDD3',
+    width: '100%',
+  },
   liveTranscriptText: {
-    fontSize: FontSize.lg,
+    fontSize: FontSize.md,
     fontWeight: '700',
     color: Colors.foreground,
     textAlign: 'center',
-    marginVertical: Spacing.xs,
     fontStyle: 'italic',
   },
   listeningHint: {
-    fontSize: FontSize.md,
-    color: Colors.error,
+    fontSize: FontSize.sm,
+    color: '#BE123C',
     fontStyle: 'italic',
+    textAlign: 'center',
   },
   stopBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.error,
+    backgroundColor: '#E11D48',
     paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.full,
+    paddingVertical: 13,
+    borderRadius: Radius.xl,
     gap: Spacing.sm,
-    marginTop: Spacing.xs,
+    shadowColor: '#E11D48',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   stopText: {
     color: Colors.white,
@@ -251,12 +379,25 @@ const styles = StyleSheet.create({
   },
   processingBox: {
     alignItems: 'center',
-    padding: Spacing.xl,
-    gap: Spacing.md,
+    padding: Spacing.xxl,
+    gap: Spacing.sm,
   },
-  processingText: {
-    fontSize: FontSize.md,
-    color: Colors.primary,
-    fontWeight: '600',
+  processingSpinnerContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.primaryBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.xs,
+  },
+  processingTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: '800',
+    color: Colors.foreground,
+  },
+  processingSub: {
+    fontSize: FontSize.sm,
+    color: Colors.mutedForeground,
   },
 });
