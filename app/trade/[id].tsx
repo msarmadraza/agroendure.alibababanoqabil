@@ -104,8 +104,9 @@ export default function TradeChatScreen() {
 
   // Subscribe to Supabase Realtime updates
   useEffect(() => {
+    const channelName = `trade-${tradeId}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const channel = supabase
-      .channel(`trade-${tradeId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `trade_id=eq.${tradeId}` },
@@ -133,7 +134,11 @@ export default function TradeChatScreen() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      try {
+        supabase.removeChannel(channel);
+      } catch (e) {
+        console.warn('Error removing channel in trade:', e);
+      }
     };
   }, [tradeId]);
 

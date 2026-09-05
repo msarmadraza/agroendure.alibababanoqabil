@@ -190,3 +190,94 @@ export function saveTradeTerms(tradeId: string, terms: AgreementTerm[]) {
     }
   }
 }
+
+export interface TradeConfirmationState {
+  buyerConfirmed: boolean;
+  sellerConfirmed: boolean;
+  buyerConfirmedAt?: string | null;
+  sellerConfirmedAt?: string | null;
+}
+
+const STORAGE_KEY_CONFIRMATIONS = 'agroendure_demo_confirmation_';
+const memoryConfirmations: Record<string, TradeConfirmationState> = {};
+
+export function loadTradeConfirmation(tradeId: string): TradeConfirmationState {
+  if (memoryConfirmations[tradeId]) {
+    return memoryConfirmations[tradeId];
+  }
+
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const raw = window.localStorage.getItem(STORAGE_KEY_CONFIRMATIONS + tradeId);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          memoryConfirmations[tradeId] = parsed;
+          return parsed;
+        }
+      } catch {
+        // Fallback
+      }
+    }
+  }
+
+  const defaultState: TradeConfirmationState = {
+    buyerConfirmed: false,
+    sellerConfirmed: false,
+    buyerConfirmedAt: null,
+    sellerConfirmedAt: null,
+  };
+  memoryConfirmations[tradeId] = defaultState;
+  return defaultState;
+}
+
+export function saveTradeConfirmation(
+  tradeId: string,
+  role: 'buyer' | 'seller',
+  confirmed: boolean = true
+): TradeConfirmationState {
+  const current = loadTradeConfirmation(tradeId);
+  const now = new Date().toISOString();
+  const updated: TradeConfirmationState = {
+    ...current,
+    ...(role === 'buyer'
+      ? {
+          buyerConfirmed: confirmed,
+          buyerConfirmedAt: confirmed ? (current.buyerConfirmedAt || now) : null,
+        }
+      : {
+          sellerConfirmed: confirmed,
+          sellerConfirmedAt: confirmed ? (current.sellerConfirmedAt || now) : null,
+        }),
+  };
+
+  memoryConfirmations[tradeId] = updated;
+
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.setItem(STORAGE_KEY_CONFIRMATIONS + tradeId, JSON.stringify(updated));
+    } catch {
+      // Storage write fail silent
+    }
+  }
+
+  return updated;
+}
+
+export function resetTradeConfirmation(tradeId: string): TradeConfirmationState {
+  const resetState: TradeConfirmationState = {
+    buyerConfirmed: false,
+    sellerConfirmed: false,
+    buyerConfirmedAt: null,
+    sellerConfirmedAt: null,
+  };
+  memoryConfirmations[tradeId] = resetState;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY_CONFIRMATIONS + tradeId);
+    } catch {
+      // ignore
+    }
+  }
+  return resetState;
+}

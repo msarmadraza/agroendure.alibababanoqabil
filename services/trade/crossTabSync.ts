@@ -1,12 +1,15 @@
 import { ChatMessage, AgreementTerm } from '@/types/database';
 
-export type SyncEventType = 'NEW_MESSAGE' | 'TERMS_UPDATED';
+export type SyncEventType = 'NEW_MESSAGE' | 'TERMS_UPDATED' | 'CONFIRMATION_UPDATED';
 
 export interface SyncPayload {
   type: SyncEventType;
   tradeId: string;
   message?: ChatMessage;
   terms?: AgreementTerm[];
+  role?: 'buyer' | 'seller';
+  confirmed?: boolean;
+  confirmedAt?: string;
   timestamp: number;
 }
 
@@ -60,6 +63,18 @@ class CrossTabSyncEngine {
       type: 'TERMS_UPDATED',
       tradeId,
       terms,
+      timestamp: Date.now(),
+    };
+    this.sendPayload(payload);
+  }
+
+  public broadcastConfirmation(tradeId: string, role: 'buyer' | 'seller', confirmed: boolean = true) {
+    const payload: SyncPayload = {
+      type: 'CONFIRMATION_UPDATED',
+      tradeId,
+      role,
+      confirmed,
+      confirmedAt: new Date().toISOString(),
       timestamp: Date.now(),
     };
     this.sendPayload(payload);
