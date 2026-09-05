@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import {
   Bell,
   TrendingUp,
@@ -42,6 +42,7 @@ import {
   getInstantDashboardBriefingUrdu,
 } from '@/services/voice/speechService';
 import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
+import { VoiceCircleButton } from '@/components/ui/VoiceCircleButton';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -146,8 +147,19 @@ export default function Dashboard() {
       ];
 
   const [isBriefingSpeaking, setIsBriefingSpeaking] = useState(false);
+  const hasAutoPlayedRef = useRef(false);
 
-  const handlePlayBriefing = () => {
+  const briefingText = useMemo(() => {
+    return getInstantDashboardBriefingUrdu(activeRole, {
+      activeListings: activeListingsCount,
+      activeNegotiations: activeNegotiationsCount,
+      topBid: topActiveBid,
+      availableCrops: recentCrops.length || 6,
+      userName: activeUser?.full_name || (isSeller ? 'کسان' : 'خریدار'),
+    });
+  }, [activeRole, activeListingsCount, activeNegotiationsCount, topActiveBid, recentCrops.length, activeUser?.full_name, isSeller]);
+
+  const handlePlayBriefing = useCallback(() => {
     if (isBriefingSpeaking) {
       stopSpeaking();
       setIsBriefingSpeaking(false);
@@ -156,15 +168,7 @@ export default function Dashboard() {
 
     setIsBriefingSpeaking(true);
     try {
-      const text = getInstantDashboardBriefingUrdu(activeRole, {
-        activeListings: activeListingsCount,
-        activeNegotiations: activeNegotiationsCount,
-        topBid: topActiveBid,
-        availableCrops: recentCrops.length || 6,
-        userName: activeUser?.full_name || (isSeller ? 'کسان' : 'خریدار'),
-      });
-
-      speakUrdu(text, {
+      speakUrdu(briefingText, {
         onStart: () => setIsBriefingSpeaking(true),
         onEnd: () => setIsBriefingSpeaking(false),
         onError: () => setIsBriefingSpeaking(false),
@@ -172,7 +176,32 @@ export default function Dashboard() {
     } catch {
       setIsBriefingSpeaking(false);
     }
-  };
+  }, [isBriefingSpeaking, briefingText]);
+
+  // Automatically start voice briefing when user opens the dashboard
+  useFocusEffect(
+    useCallback(() => {
+      let timer: NodeJS.Timeout | null = null;
+
+      timer = setTimeout(() => {
+        if (!hasAutoPlayedRef.current) {
+          hasAutoPlayedRef.current = true;
+          setIsBriefingSpeaking(true);
+          speakUrdu(briefingText, {
+            onStart: () => setIsBriefingSpeaking(true),
+            onEnd: () => setIsBriefingSpeaking(false),
+            onError: () => setIsBriefingSpeaking(false),
+          });
+        }
+      }, 450);
+
+      return () => {
+        if (timer) clearTimeout(timer);
+        stopSpeaking();
+        setIsBriefingSpeaking(false);
+      };
+    }, [briefingText])
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -188,6 +217,13 @@ export default function Dashboard() {
             resizeMode="contain"
           />
           <View style={styles.headerActions}>
+            <VoiceCircleButton
+              text={briefingText}
+              autoPlay={false}
+              speaking={isBriefingSpeaking}
+              onPress={handlePlayBriefing}
+              size={36}
+            />
             <LanguageSwitcherButton compact />
             <TouchableOpacity style={styles.bellButton}>
               <Bell size={20} color={Colors.foreground} />

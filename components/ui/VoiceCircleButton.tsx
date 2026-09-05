@@ -16,6 +16,8 @@ interface VoiceCircleButtonProps {
   autoPlay?: boolean;
   size?: number;
   style?: StyleProp<ViewStyle>;
+  speaking?: boolean;
+  onPress?: () => void;
   onStateChange?: (speaking: boolean) => void;
 }
 
@@ -24,9 +26,13 @@ export const VoiceCircleButton: React.FC<VoiceCircleButtonProps> = ({
   autoPlay = true,
   size = 40,
   style,
+  speaking: controlledSpeaking,
+  onPress: customOnPress,
   onStateChange,
 }) => {
-  const [speaking, setSpeaking] = useState(false);
+  const [internalSpeaking, setInternalSpeaking] = useState(false);
+  const isControlled = controlledSpeaking !== undefined;
+  const speaking = isControlled ? controlledSpeaking : internalSpeaking;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const rippleAnim = useRef(new Animated.Value(0)).current;
 
@@ -58,8 +64,9 @@ export const VoiceCircleButton: React.FC<VoiceCircleButtonProps> = ({
     };
   }, [speaking]);
 
-  // Handle autoplay on screen/step entry
+  // Handle autoplay on screen/step entry (when uncontrolled)
   useEffect(() => {
+    if (isControlled) return;
     if (!text || !text.trim()) return;
 
     let timer: NodeJS.Timeout | null = null;
@@ -74,35 +81,40 @@ export const VoiceCircleButton: React.FC<VoiceCircleButtonProps> = ({
     return () => {
       if (timer) clearTimeout(timer);
       stopSpeaking();
-      setSpeaking(false);
+      setInternalSpeaking(false);
       onStateChange?.(false);
     };
-  }, [text, autoPlay]);
+  }, [text, autoPlay, isControlled]);
 
   const startPlayback = () => {
-    setSpeaking(true);
+    setInternalSpeaking(true);
     onStateChange?.(true);
 
     speakUrdu(text, {
       onStart: () => {
-        setSpeaking(true);
+        setInternalSpeaking(true);
         onStateChange?.(true);
       },
       onEnd: () => {
-        setSpeaking(false);
+        setInternalSpeaking(false);
         onStateChange?.(false);
       },
       onError: () => {
-        setSpeaking(false);
+        setInternalSpeaking(false);
         onStateChange?.(false);
       },
     });
   };
 
   const handleToggle = () => {
+    if (customOnPress) {
+      customOnPress();
+      return;
+    }
+
     if (speaking) {
       stopSpeaking();
-      setSpeaking(false);
+      setInternalSpeaking(false);
       onStateChange?.(false);
     } else {
       startPlayback();

@@ -875,19 +875,23 @@ export default function OnboardingFlow() {
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           {/* Header with back button and progress */}
           <View style={styles.header}>
-            {step !== 'slides' ? (
-              <TouchableOpacity onPress={goBack} style={styles.backButton} activeOpacity={0.8}>
-                <ArrowLeft size={20} color={Colors.foreground} />
-              </TouchableOpacity>
-            ) : (
-              <View style={{ width: 40 }} />
-            )}
+            <View style={styles.headerSideAction}>
+              {step !== 'slides' ? (
+                <TouchableOpacity onPress={goBack} style={styles.backButton} activeOpacity={0.8}>
+                  <ArrowLeft size={20} color={Colors.foreground} />
+                </TouchableOpacity>
+              ) : (
+                <View style={{ width: 40, height: 40 }} />
+              )}
+            </View>
             {renderDots()}
-            <VoiceCircleButton
-              text={onboardingVoiceScript}
-              autoPlay
-              size={38}
-            />
+            <View style={styles.headerSideAction}>
+              <VoiceCircleButton
+                text={onboardingVoiceScript}
+                autoPlay
+                size={38}
+              />
+            </View>
           </View>
 
           {step === 'slides' && renderSlides()}
@@ -919,7 +923,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: Spacing.xl,
-    minHeight: 40,
+    minHeight: 44,
+  },
+  headerSideAction: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   backButton: {
     width: 40,
@@ -932,10 +942,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepperContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: Spacing.sm,
-    marginLeft: 'auto',
+    paddingHorizontal: Spacing.xs,
   },
   stepperBars: {
     flexDirection: 'row',
