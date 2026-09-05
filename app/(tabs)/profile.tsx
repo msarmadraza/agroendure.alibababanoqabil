@@ -8,11 +8,11 @@ import {
   ShieldCheck,
   ScanFace,
   Globe,
-  ArrowLeftRight,
+  Sprout,
+  ShoppingBag,
   Plus,
   CheckCircle2,
   AlertCircle,
-  TrendingUp,
 } from 'lucide-react-native';
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
 import { useDemoAuth } from '@/services/auth/demoAuthContext';
@@ -22,7 +22,7 @@ import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
 
 export default function Profile() {
   const router = useRouter();
-  const { activeUser, activeRole, toggleRole, setUserRole } = useDemoAuth();
+  const { activeUser, activeRole, setUserRole } = useDemoAuth();
   const { language, setLanguage, t, isUrdu } = useLanguage();
 
   const [isVerified, setIsVerified] = useState(false);
@@ -49,55 +49,75 @@ export default function Profile() {
   ];
 
   const userListings: any[] = [];
-
   const isSeller = activeRole === 'seller';
+
+  // Build 2-letter monogram
+  const fullName = activeUser?.full_name || 'Ahmad Ali';
+  const nameParts = fullName.trim().split(' ');
+  const monogram =
+    nameParts.length >= 2
+      ? (nameParts[0][0] + nameParts[1][0]).toUpperCase()
+      : fullName.slice(0, 2).toUpperCase();
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Header with Universal Language Switcher */}
+        {/* ── Header ── */}
         <View style={styles.headerRow}>
           <Text style={styles.title}>{t('profile.title')}</Text>
           <LanguageSwitcherButton compact />
         </View>
 
-        <View style={styles.list}>
-          {/* User Profile Card */}
+        <View style={styles.cards}>
+          {/* ── Profile Card ── */}
           <View style={[styles.card, Shadows.soft]}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {activeUser?.full_name ? activeUser.full_name.charAt(0) : 'A'}
+            {/* Avatar */}
+            <View style={styles.avatarWrap}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{monogram}</Text>
+              </View>
+              {isVerified && (
+                <View style={styles.verifiedBadge}>
+                  <ShieldCheck size={14} color={Colors.white} />
+                </View>
+              )}
+            </View>
+
+            <Text style={styles.name}>{fullName}</Text>
+            <View style={styles.locationRow}>
+              <View style={[styles.rolePill, isSeller ? styles.rolePillSeller : styles.rolePillBuyer]}>
+                {isSeller
+                  ? <Sprout size={12} color={Colors.primary} />
+                  : <ShoppingBag size={12} color={Colors.blue600} />}
+                <Text style={[styles.rolePillText, isSeller ? styles.rolePillTextSeller : styles.rolePillTextBuyer]}>
+                  {isSeller ? (isUrdu ? 'فروخت کنندہ' : 'Seller') : (isUrdu ? 'خریدار' : 'Buyer')}
+                </Text>
+              </View>
+              <Text style={styles.locationText}>
+                {isSeller ? t('profile.farmerLocation') : t('profile.buyerLocation')}
               </Text>
             </View>
 
-            <Text style={styles.name}>{activeUser?.full_name || 'Ahmad Ali'}</Text>
-            <Text style={styles.location}>
-              {isSeller ? t('profile.farmerLocation') : t('profile.buyerLocation')}
-            </Text>
-
-            <View style={styles.stats}>
-              <View style={styles.stat}>
-                <View style={styles.ratingRow}>
-                  <Star size={15} color="#EAB308" fill="#EAB308" />
+            {/* Stats */}
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <View style={styles.statValueRow}>
+                  <Star size={14} color="#EAB308" fill="#EAB308" />
                   <Text style={styles.statValue}>4.8</Text>
                 </View>
                 <Text style={styles.statLabel}>{t('profile.rating')}</Text>
               </View>
-
               <View style={styles.statDivider} />
-
-              <View style={styles.stat}>
+              <View style={styles.statItem}>
                 <Text style={styles.statValue}>14</Text>
                 <Text style={styles.statLabel}>{t('profile.sales')}</Text>
               </View>
-
               <View style={styles.statDivider} />
-
-              <View style={styles.stat}>
-                <View style={styles.ratingRow}>
-                  <ShieldCheck size={16} color="#059669" />
-                  <Text style={[styles.statValue, { color: '#059669' }]}>
-                    {isVerified ? t('profile.verifiedText') : (isUrdu ? 'تصدیق' : 'Active')}
+              <View style={styles.statItem}>
+                <View style={styles.statValueRow}>
+                  <ShieldCheck size={14} color={isVerified ? Colors.success : Colors.mutedForeground} />
+                  <Text style={[styles.statValue, { color: isVerified ? Colors.success : Colors.mutedForeground }]}>
+                    {isVerified ? (isUrdu ? 'تصدیق شدہ' : 'Verified') : (isUrdu ? 'نہیں' : 'Not yet')}
                   </Text>
                 </View>
                 <Text style={styles.statLabel}>{t('common.verified')}</Text>
@@ -105,150 +125,156 @@ export default function Profile() {
             </View>
           </View>
 
-          {/* DEDICATED LANGUAGE SELECTION CARD */}
+          {/* ── Language Card ── */}
           <View style={[styles.card, Shadows.soft]}>
-            <View style={styles.sectionHeaderRow}>
+            <View style={styles.cardHeaderRow}>
               <View style={styles.iconCircle}>
-                <Globe size={18} color="#15803D" />
+                <Globe size={16} color={Colors.primary} />
               </View>
               <Text style={styles.cardTitle}>{t('profile.languagePref')}</Text>
             </View>
-
-            <View style={styles.languageToggleContainer}>
+            <View style={styles.tileRow}>
               <TouchableOpacity
-                style={[styles.langOptionCard, isUrdu && styles.langOptionCardActive]}
+                style={[styles.tile, isUrdu && styles.tileActive]}
                 onPress={() => setLanguage('ur')}
                 activeOpacity={0.85}
               >
-                <View style={styles.langOptionTop}>
-                  <Text style={[styles.langOptionTitle, isUrdu && styles.langOptionTitleActive]}>
-                    اردو
-                  </Text>
-                  {isUrdu && <CheckCircle2 size={16} color="#15803D" />}
+                <View style={styles.tileTop}>
+                  <Text style={[styles.tileName, isUrdu && styles.tileNameActive]}>اردو</Text>
+                  {isUrdu && <CheckCircle2 size={16} color={Colors.primary} />}
                 </View>
-                <Text style={styles.langOptionSub}>Urdu (قومی زبان)</Text>
+                <Text style={styles.tileSub}>Urdu (قومی زبان)</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.langOptionCard, !isUrdu && styles.langOptionCardActive]}
+                style={[styles.tile, !isUrdu && styles.tileActive]}
                 onPress={() => setLanguage('en')}
                 activeOpacity={0.85}
               >
-                <View style={styles.langOptionTop}>
-                  <Text style={[styles.langOptionTitle, !isUrdu && styles.langOptionTitleActive]}>
-                    English
-                  </Text>
-                  {!isUrdu && <CheckCircle2 size={16} color="#15803D" />}
+                <View style={styles.tileTop}>
+                  <Text style={[styles.tileName, !isUrdu && styles.tileNameActive]}>English</Text>
+                  {!isUrdu && <CheckCircle2 size={16} color={Colors.primary} />}
                 </View>
-                <Text style={styles.langOptionSub}>انگریزی (English)</Text>
+                <Text style={styles.tileSub}>انگریزی (English)</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* TRADING ROLE SWITCHER CARD */}
+          {/* ── Role Card ── */}
           <View style={[styles.card, Shadows.soft]}>
-            <View style={styles.sectionHeaderRow}>
-              <View style={styles.iconCircle}>
-                <ArrowLeftRight size={18} color="#2563EB" />
+            <View style={styles.cardHeaderRow}>
+              <View style={[styles.iconCircle, { backgroundColor: '#EFF6FF' }]}>
+                <Sprout size={16} color={Colors.blue600} />
               </View>
               <Text style={styles.cardTitle}>{t('profile.activeRole')}</Text>
             </View>
-
-            <View style={styles.roleContainer}>
+            <View style={styles.tileRow}>
               <TouchableOpacity
-                style={[styles.roleOptionCard, isSeller && styles.roleOptionCardSeller]}
+                style={[styles.tile, isSeller && styles.tileActive]}
                 onPress={() => setUserRole('seller')}
                 activeOpacity={0.85}
               >
-                <Text style={[styles.roleOptionTitle, isSeller && styles.roleOptionTextActive]}>
-                  {isUrdu ? 'فروخت کنندہ (Seller)' : 'Seller / Farmer'}
+                <View style={styles.tileTop}>
+                  <Sprout size={20} color={isSeller ? Colors.primary : Colors.mutedForeground} />
+                  {isSeller && <CheckCircle2 size={16} color={Colors.primary} />}
+                </View>
+                <Text style={[styles.tileName, isSeller && styles.tileNameActive]}>
+                  {isUrdu ? 'فروخت کنندہ' : 'Seller'}
                 </Text>
-                {isSeller && <CheckCircle2 size={16} color="#15803D" />}
+                <Text style={styles.tileSub}>{isUrdu ? 'کسان / فارمر' : 'Farmer / Grower'}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.roleOptionCard, !isSeller && styles.roleOptionCardBuyer]}
+                style={[styles.tile, !isSeller && styles.tileBuyerActive]}
                 onPress={() => setUserRole('buyer')}
                 activeOpacity={0.85}
               >
-                <Text style={[styles.roleOptionTitle, !isSeller && styles.roleOptionTextActive]}>
-                  {isUrdu ? 'خریدار (Buyer)' : 'Buyer / Mill'}
+                <View style={styles.tileTop}>
+                  <ShoppingBag size={20} color={!isSeller ? Colors.blue600 : Colors.mutedForeground} />
+                  {!isSeller && <CheckCircle2 size={16} color={Colors.blue600} />}
+                </View>
+                <Text style={[styles.tileName, !isSeller && { color: Colors.blue600 }]}>
+                  {isUrdu ? 'خریدار' : 'Buyer'}
                 </Text>
-                {!isSeller && <CheckCircle2 size={16} color="#2563EB" />}
+                <Text style={styles.tileSub}>{isUrdu ? 'مل / تاجر' : 'Mill / Trader'}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* VERIFICATION STATUS CARD */}
+          {/* ── Verification Status ── */}
           <View style={[styles.card, Shadows.soft]}>
-            <View style={styles.sectionHeaderRow}>
-              <View style={styles.iconCircle}>
-                <ShieldCheck size={18} color="#059669" />
+            <View style={styles.cardHeaderRow}>
+              <View style={[styles.iconCircle, { backgroundColor: Colors.primaryBg }]}>
+                <ShieldCheck size={16} color={Colors.success} />
               </View>
               <Text style={styles.cardTitle}>{t('profile.verificationStatus')}</Text>
             </View>
 
             <View style={styles.verifList}>
-              <View style={styles.verifItem}>
-                <View style={styles.verifItemLeft}>
-                  <ShieldCheck size={18} color="#059669" />
+              {/* CNIC row */}
+              <View style={styles.verifRow}>
+                <View style={styles.verifLeft}>
+                  <ShieldCheck size={18} color={isVerified ? Colors.success : Colors.mutedForeground} />
                   <View>
-                    <Text style={styles.verifItemTitle}>{t('profile.cnicStatus')}</Text>
-                    <Text style={styles.verifItemSub}>
+                    <Text style={styles.verifTitle}>{t('profile.cnicStatus')}</Text>
+                    <Text style={styles.verifSub}>
                       {isVerified ? t('profile.verifiedText') : t('profile.unverifiedText')}
                     </Text>
                   </View>
                 </View>
-
                 <TouchableOpacity
-                  style={styles.verifActionBtn}
+                  style={[styles.verifBtn, isVerified && styles.verifBtnVerified]}
                   onPress={() => router.push('/verification/cnic')}
-                  activeOpacity={0.8}
                 >
-                  <Text style={styles.verifActionText}>
-                    {isVerified ? (isUrdu ? 'دوبارہ دیکھیں' : 'Review') : (isUrdu ? 'تصدیق کریں' : 'Verify')}
+                  <Text style={[styles.verifBtnText, isVerified && styles.verifBtnTextVerified]}>
+                    {isVerified ? (isUrdu ? 'دیکھیں' : 'View') : (isUrdu ? 'تصدیق کریں' : 'Verify')}
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.verifItem}>
-                <View style={styles.verifItemLeft}>
-                  <ScanFace size={18} color="#059669" />
+              <View style={styles.verifDivider} />
+
+              {/* Face row */}
+              <View style={styles.verifRow}>
+                <View style={styles.verifLeft}>
+                  <ScanFace size={18} color={isVerified ? Colors.success : Colors.mutedForeground} />
                   <View>
-                    <Text style={styles.verifItemTitle}>{t('profile.biometricStatus')}</Text>
-                    <Text style={styles.verifItemSub}>
+                    <Text style={styles.verifTitle}>{t('profile.biometricStatus')}</Text>
+                    <Text style={styles.verifSub}>
                       {isVerified ? t('profile.verifiedText') : t('profile.unverifiedText')}
                     </Text>
                   </View>
                 </View>
-
                 <TouchableOpacity
-                  style={styles.verifActionBtn}
+                  style={[styles.verifBtn, isVerified && styles.verifBtnVerified]}
                   onPress={() => router.push('/verification/trade-101' as any)}
-                  activeOpacity={0.8}
                 >
-                  <Text style={styles.verifActionText}>
-                    {isVerified ? (isUrdu ? 'دوبارہ دیکھیں' : 'Review') : (isUrdu ? 'تصدیق کریں' : 'Verify')}
+                  <Text style={[styles.verifBtnText, isVerified && styles.verifBtnTextVerified]}>
+                    {isVerified ? (isUrdu ? 'دیکھیں' : 'View') : (isUrdu ? 'تصدیق کریں' : 'Verify')}
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
 
-          {/* RECEIVED BIDS */}
+          {/* ── Received Bids ── */}
           {bids.length > 0 && (
             <View style={[styles.card, Shadows.soft]}>
               <Text style={styles.cardTitle}>{t('profile.receivedBids')}</Text>
               <View style={styles.bidList}>
                 {bids.map((bid) => (
                   <View key={bid.id} style={styles.bidItem}>
+                    <View style={styles.bidMonogram}>
+                      <Text style={styles.bidMonogramText}>
+                        {bid.buyerName.slice(0, 2).toUpperCase()}
+                      </Text>
+                    </View>
                     <View style={styles.bidInfo}>
                       <Text style={styles.bidName}>{bid.buyerName}</Text>
                       <Text style={styles.bidAmount}>
-                        ₨{bid.bidAmount.toLocaleString()} {t('common.pkrPerMann')}
+                        PKR {bid.bidAmount.toLocaleString()} / {t('common.pkrPerMann')}
                       </Text>
-                      <Text style={styles.bidMeta}>{bid.deliveryDate}</Text>
-                      <Text style={styles.bidMeta}>{bid.dateCreated}</Text>
+                      <Text style={styles.bidMeta}>{bid.deliveryDate} · {bid.dateCreated}</Text>
                     </View>
                     <View style={[styles.statusBadge, { backgroundColor: Colors.warningBg }]}>
                       <Text style={[styles.statusText, { color: Colors.warning }]}>
@@ -261,22 +287,22 @@ export default function Profile() {
             </View>
           )}
 
-          {/* MY LISTINGS */}
+          {/* ── My Listings ── */}
           <View style={[styles.card, Shadows.soft]}>
             <Text style={styles.cardTitle}>{t('profile.myListings')}</Text>
-            {userListings.length === 0 ? (
+            {userListings.length === 0 && (
               <View style={styles.empty}>
+                <AlertCircle size={32} color={Colors.mutedForeground} />
                 <Text style={styles.emptyText}>{t('profile.noListings')}</Text>
                 <TouchableOpacity
-                  style={styles.addListingBtn}
+                  style={styles.addBtn}
                   onPress={() => router.push('/(tabs)/add')}
-                  activeOpacity={0.8}
                 >
-                  <Plus size={16} color="#FFFFFF" />
-                  <Text style={styles.addListingBtnText}>{t('profile.createFirstListing')}</Text>
+                  <Plus size={16} color={Colors.white} />
+                  <Text style={styles.addBtnText}>{t('profile.createFirstListing')}</Text>
                 </TouchableOpacity>
               </View>
-            ) : null}
+            )}
           </View>
         </View>
       </ScrollView>
@@ -287,278 +313,330 @@ export default function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: Colors.secondary,
   },
   scrollContent: {
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
     paddingBottom: 110,
+    gap: Spacing.lg,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.lg,
   },
   title: {
     fontSize: FontSize.xxl,
     fontWeight: '800',
     color: Colors.foreground,
   },
-  list: {
+  cards: {
     gap: Spacing.md,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.card,
     borderRadius: Radius.xl,
     padding: Spacing.lg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.border,
+    gap: Spacing.md,
+  },
+  // Avatar
+  avatarWrap: {
+    alignSelf: 'center',
+    position: 'relative',
+    marginBottom: Spacing.xs,
   },
   avatar: {
     width: 76,
     height: 76,
     borderRadius: 38,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: Colors.primaryBg,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'center',
-    marginBottom: Spacing.sm,
+    borderWidth: 2,
+    borderColor: Colors.primary,
   },
   avatarText: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '800',
-    color: '#15803D',
+    color: Colors.primary,
+    letterSpacing: 1,
+  },
+  verifiedBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.white,
   },
   name: {
     fontSize: FontSize.lg,
     fontWeight: '800',
-    color: '#0F172A',
+    color: Colors.foreground,
     textAlign: 'center',
+    marginTop: -Spacing.xs,
   },
-  location: {
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    flexWrap: 'wrap',
+  },
+  rolePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+  },
+  rolePillSeller: {
+    backgroundColor: Colors.primaryBg,
+  },
+  rolePillBuyer: {
+    backgroundColor: '#EFF6FF',
+  },
+  rolePillText: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+  },
+  rolePillTextSeller: {
+    color: Colors.primary,
+  },
+  rolePillTextBuyer: {
+    color: Colors.blue600,
+  },
+  locationText: {
     fontSize: FontSize.sm,
-    color: '#64748B',
-    textAlign: 'center',
-    marginTop: 2,
-    marginBottom: Spacing.md,
+    color: Colors.mutedForeground,
   },
-  stats: {
+  // Stats
+  statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: Colors.borderLight,
     paddingTop: Spacing.md,
     marginTop: Spacing.xs,
   },
-  stat: {
+  statItem: {
     alignItems: 'center',
     flex: 1,
+    gap: 2,
   },
-  ratingRow: {
+  statValueRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  statDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#E2E8F0',
-  },
   statValue: {
     fontSize: FontSize.md,
     fontWeight: '800',
-    color: '#0F172A',
+    color: Colors.foreground,
   },
   statLabel: {
     fontSize: FontSize.xs,
-    color: '#64748B',
-    marginTop: 2,
+    color: Colors.mutedForeground,
   },
-  sectionHeaderRow: {
+  statDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: Colors.border,
+  },
+  // Card header
+  cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+    marginBottom: -Spacing.xs,
   },
   iconCircle: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F1F5F9',
-    justifyContent: 'center',
+    backgroundColor: Colors.primaryBg,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   cardTitle: {
     fontSize: FontSize.md,
     fontWeight: '700',
-    color: '#0F172A',
+    color: Colors.foreground,
   },
-  languageToggleContainer: {
+  // Tile row (language / role)
+  tileRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: Spacing.sm,
   },
-  langOptionCard: {
+  tile: {
     flex: 1,
-    padding: 12,
-    borderRadius: 12,
+    padding: Spacing.md,
+    borderRadius: Radius.lg,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
+    borderColor: Colors.border,
+    backgroundColor: Colors.muted,
+    gap: 4,
   },
-  langOptionCardActive: {
-    borderColor: '#15803D',
-    backgroundColor: '#F0FDF4',
+  tileActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryBg,
   },
-  langOptionTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  langOptionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#334155',
-  },
-  langOptionTitleActive: {
-    color: '#15803D',
-  },
-  langOptionSub: {
-    fontSize: 11,
-    color: '#64748B',
-  },
-  roleContainer: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  roleOptionCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-  },
-  roleOptionCardSeller: {
-    borderColor: '#15803D',
-    backgroundColor: '#F0FDF4',
-  },
-  roleOptionCardBuyer: {
-    borderColor: '#2563EB',
+  tileBuyerActive: {
+    borderColor: Colors.blue600,
     backgroundColor: '#EFF6FF',
   },
-  roleOptionTitle: {
-    fontSize: 13,
+  tileTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  tileName: {
+    fontSize: FontSize.md,
     fontWeight: '700',
-    color: '#334155',
+    color: Colors.mutedForeground,
   },
-  roleOptionTextActive: {
-    color: '#0F172A',
+  tileNameActive: {
+    color: Colors.primary,
   },
+  tileSub: {
+    fontSize: FontSize.xs,
+    color: Colors.mutedForeground,
+  },
+  // Verification
   verifList: {
-    gap: 10,
+    gap: 0,
   },
-  verifItem: {
+  verifRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    paddingVertical: Spacing.md,
   },
-  verifItemLeft: {
+  verifLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: Spacing.sm,
+    flex: 1,
   },
-  verifItemTitle: {
-    fontSize: 13,
+  verifTitle: {
+    fontSize: FontSize.sm,
     fontWeight: '700',
-    color: '#0F172A',
+    color: Colors.foreground,
   },
-  verifItemSub: {
-    fontSize: 11,
-    color: '#64748B',
+  verifSub: {
+    fontSize: FontSize.xs,
+    color: Colors.mutedForeground,
+    marginTop: 1,
   },
-  verifActionBtn: {
-    paddingHorizontal: 12,
+  verifDivider: {
+    height: 1,
+    backgroundColor: Colors.borderLight,
+  },
+  verifBtn: {
+    paddingHorizontal: Spacing.md,
     paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
+    borderRadius: Radius.sm,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryBg,
   },
-  verifActionText: {
-    fontSize: 12,
+  verifBtnVerified: {
+    borderColor: Colors.border,
+    backgroundColor: Colors.muted,
+  },
+  verifBtnText: {
+    fontSize: FontSize.xs,
     fontWeight: '700',
-    color: '#0F172A',
+    color: Colors.primary,
   },
+  verifBtnTextVerified: {
+    color: Colors.mutedForeground,
+  },
+  // Bids
   bidList: {
-    width: '100%',
     gap: Spacing.sm,
   },
   bidItem: {
-    backgroundColor: '#F8FAFC',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.muted,
     borderRadius: Radius.lg,
     padding: Spacing.md,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.border,
+  },
+  bidMonogram: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primaryBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bidMonogramText: {
+    fontSize: FontSize.sm,
+    fontWeight: '800',
+    color: Colors.primary,
   },
   bidInfo: {
     flex: 1,
+    gap: 1,
   },
   bidName: {
     fontSize: FontSize.sm,
     fontWeight: '700',
-    color: '#0F172A',
+    color: Colors.foreground,
   },
   bidAmount: {
     fontSize: FontSize.sm,
     fontWeight: '800',
-    color: '#15803D',
-    marginTop: 2,
+    color: Colors.primary,
   },
   bidMeta: {
     fontSize: FontSize.xs,
-    color: '#64748B',
-    marginTop: 2,
+    color: Colors.mutedForeground,
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
     borderRadius: Radius.full,
   },
   statusText: {
     fontSize: FontSize.xs,
     fontWeight: '700',
   },
+  // Empty state
   empty: {
     alignItems: 'center',
     paddingVertical: Spacing.lg,
-    gap: 12,
+    gap: Spacing.md,
   },
   emptyText: {
-    color: '#64748B',
     fontSize: FontSize.sm,
+    color: Colors.mutedForeground,
   },
-  addListingBtn: {
+  addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#1b4332',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 10,
+    gap: Spacing.sm,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.lg,
   },
-  addListingBtnText: {
-    color: '#FFFFFF',
+  addBtnText: {
+    color: Colors.white,
     fontSize: FontSize.sm,
     fontWeight: '700',
   },

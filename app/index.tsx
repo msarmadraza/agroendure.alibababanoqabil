@@ -411,8 +411,14 @@ export default function OnboardingFlow() {
           </View>
 
           <View style={styles.rolePerksRow}>
-            <Text style={styles.rolePerkItem}>✓ AI آواز لسٹنگ</Text>
-            <Text style={styles.rolePerkItem}>✓ محفوظ ڈیجیٹل معاہدہ</Text>
+            <View style={styles.perkChip}>
+              <CheckCircle2 size={12} color={Colors.primary} />
+              <Text style={styles.rolePerkItem}>AI آواز لسٹنگ</Text>
+            </View>
+            <View style={styles.perkChip}>
+              <CheckCircle2 size={12} color={Colors.primary} />
+              <Text style={styles.rolePerkItem}>محفوظ ڈیجیٹل معاہدہ</Text>
+            </View>
           </View>
         </TouchableOpacity>
 
@@ -447,8 +453,14 @@ export default function OnboardingFlow() {
           </View>
 
           <View style={styles.rolePerksRow}>
-            <Text style={styles.rolePerkItem}>✓ شفاف ریٹس</Text>
-            <Text style={styles.rolePerkItem}>✓ ایسکرو سیکیورٹی</Text>
+            <View style={styles.perkChip}>
+              <CheckCircle2 size={12} color={Colors.primary} />
+              <Text style={styles.rolePerkItem}>شفاف ریٹس</Text>
+            </View>
+            <View style={styles.perkChip}>
+              <CheckCircle2 size={12} color={Colors.primary} />
+              <Text style={styles.rolePerkItem}>ایسکرو سیکیورٹی</Text>
+            </View>
           </View>
         </TouchableOpacity>
       </View>
@@ -1059,6 +1071,11 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.xs + 2,
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
+  },
+  perkChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   rolePerkItem: {
     fontSize: 12,

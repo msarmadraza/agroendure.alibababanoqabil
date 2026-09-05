@@ -26,15 +26,16 @@ function TabIcon({
   if (isAdd) {
     return (
       <View style={styles.addButton}>
-        <Plus size={24} color={Colors.white} />
+        <Plus size={26} color={Colors.white} />
       </View>
     );
   }
 
   return (
     <View style={styles.tabItem}>
+      {focused && <View style={styles.activeIndicator} />}
       <Icon
-        size={20}
+        size={22}
         color={focused ? Colors.primary : Colors.mutedForeground}
       />
       <Text
@@ -45,7 +46,6 @@ function TabIcon({
       >
         {label}
       </Text>
-      {focused && <View style={styles.activeIndicator} />}
       {badge ? (
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{badge}</Text>
@@ -115,50 +115,56 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
-    height: 64,
+    height: 72,
     paddingBottom: Spacing.sm,
     paddingTop: Spacing.sm,
   },
   tabItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 44,
-    minHeight: 44,
+    minWidth: 52,
+    minHeight: 52,
     position: 'relative',
+    gap: 2,
   },
   tabLabel: {
     fontSize: FontSize.xs,
-    fontWeight: '500',
-    marginTop: 2,
+    fontWeight: '600',
   },
   activeIndicator: {
     position: 'absolute',
-    bottom: -4,
-    width: 20,
+    top: 0,
+    width: 24,
     height: 3,
     borderRadius: 2,
     backgroundColor: Colors.primary,
   },
   addButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -16,
-    transform: [{ scale: 1.1 }],
+    marginTop: -20,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
   },
   badge: {
     position: 'absolute',
-    top: -2,
-    right: -4,
+    top: 0,
+    right: 2,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
     backgroundColor: Colors.error,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: Colors.white,
   },
   badgeText: {
     color: Colors.white,

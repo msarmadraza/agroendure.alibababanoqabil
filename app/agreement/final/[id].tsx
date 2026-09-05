@@ -136,16 +136,22 @@ export default function FinalAgreementScreen() {
 
         <View style={styles.row}>
           <Text style={styles.label}>{isUrdu ? 'خریدار کی توثیق:' : 'Buyer Confirmation:'}</Text>
-          <Text style={styles.confirmText}>
-            {isUrdu ? '✓ تصدیق شدہ' : '✓ Confirmed'} ({new Date().toLocaleDateString()})
-          </Text>
+          <View style={styles.confirmRow}>
+            <CheckCircle2 size={13} color="#059669" />
+            <Text style={styles.confirmText}>
+              {isUrdu ? 'تصدیق شدہ' : 'Confirmed'} ({new Date().toLocaleDateString()})
+            </Text>
+          </View>
         </View>
 
         <View style={styles.row}>
           <Text style={styles.label}>{isUrdu ? 'فروخت کنندہ کی توثیق:' : 'Seller Confirmation:'}</Text>
-          <Text style={styles.confirmText}>
-            {isUrdu ? '✓ تصدیق شدہ' : '✓ Confirmed'} ({new Date().toLocaleDateString()})
-          </Text>
+          <View style={styles.confirmRow}>
+            <CheckCircle2 size={13} color="#059669" />
+            <Text style={styles.confirmText}>
+              {isUrdu ? 'تصدیق شدہ' : 'Confirmed'} ({new Date().toLocaleDateString()})
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -341,6 +347,11 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#F1F5F9',
     marginVertical: 4,
+  },
+  confirmRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   confirmText: {
     fontSize: 13,

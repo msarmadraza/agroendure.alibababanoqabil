@@ -107,7 +107,7 @@ export default function FaceVerificationScreen() {
 
       if (result.success) {
         setSuccess(true);
-        setStepText('بائیو میٹرک شناخت کامیابی سے تصدیق ہو گئی! ✓');
+        setStepText(isUrdu ? 'بائیو میٹرک شناخت کامیابی سے تصدیق ہو گئی!' : 'Biometric identity verified successfully!');
 
         setTimeout(() => {
           router.replace({

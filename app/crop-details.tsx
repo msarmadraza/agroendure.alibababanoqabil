@@ -20,6 +20,8 @@ import {
   Play,
   Pause,
   Volume2,
+  Package,
+  ShieldCheck,
 } from 'lucide-react-native';
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
 import { useLanguage } from '@/services/i18n/languageContext';
@@ -34,16 +36,16 @@ export default function CropDetails() {
 
   const cropData = {
     id: '1',
-    title: 'اعلیٰ کوالٹی گندم',
+    title: isUrdu ? 'اعلیٰ کوالٹی گندم' : 'Premium Quality Wheat',
     price: 85000,
-    quantity: '50 من',
-    location: 'فیصل آباد، پنجاب',
-    harvestDate: '15 اپریل 2024',
-    quality: 'پریمیم',
-    variety: 'پنجاب 2011',
+    quantity: isUrdu ? '50 من' : '50 Mann',
+    location: isUrdu ? 'فیصل آباد، پنجاب' : 'Faisalabad, Punjab',
+    harvestDate: isUrdu ? '15 اپریل 2024' : 'April 15, 2024',
+    quality: isUrdu ? 'پریمیم' : 'Premium',
+    variety: isUrdu ? 'پنجاب 2011' : 'Punjab 2011',
     moisture: '12%',
     farmer: {
-      name: 'احمد علی',
+      name: isUrdu ? 'احمد علی' : 'Ahmad Ali',
       rating: 4.8,
       totalReviews: 23,
       memberSince: '2022',
@@ -55,18 +57,27 @@ export default function CropDetails() {
       require('@/assets/rice-seedlings.jpg'),
       require('@/assets/cotton-harvest.jpg'),
     ],
-    description:
-      'یہ بہترین کوالٹی کا گندم ہے۔ بالکل صاف اور خشک، کوئی کیڑا نہیں۔ فوری ڈیلیوری کے لیے دستیاب۔',
+    description: isUrdu
+      ? 'یہ بہترین کوالٹی کا گندم ہے۔ بالکل صاف اور خشک، کوئی کیڑا نہیں۔ فوری ڈیلیوری کے لیے دستیاب۔'
+      : 'Premium quality wheat, clean and dry with no pest damage. Available for immediate delivery.',
     voiceDescription: true,
     currentBids: [
-      { bidder: 'علی حسن', amount: 83000, time: '2 گھنٹے پہلے' },
-      { bidder: 'محمد کریم', amount: 81000, time: '4 گھنٹے پہلے' },
+      {
+        bidder: isUrdu ? 'علی حسن' : 'Ali Hassan',
+        amount: 83000,
+        time: isUrdu ? '2 گھنٹے پہلے' : '2h ago',
+      },
+      {
+        bidder: isUrdu ? 'محمد کریم' : 'Muhammad Karim',
+        amount: 81000,
+        time: isUrdu ? '4 گھنٹے پہلے' : '4h ago',
+      },
     ],
     specifications: [
-      { label: 'نمی', value: '12%' },
-      { label: 'پیداوار', value: '45 من فی ایکڑ' },
-      { label: 'دانے کا سائز', value: 'متوسط' },
-      { label: 'رنگ', value: 'سنہری' },
+      { label: isUrdu ? 'نمی' : 'Moisture', value: '12%' },
+      { label: isUrdu ? 'پیداوار' : 'Yield', value: isUrdu ? '45 من/ایکڑ' : '45 Mann/Acre' },
+      { label: isUrdu ? 'دانے کا سائز' : 'Grain Size', value: isUrdu ? 'متوسط' : 'Medium' },
+      { label: isUrdu ? 'رنگ' : 'Color', value: isUrdu ? 'سنہری' : 'Golden' },
     ],
   };
 
@@ -83,251 +94,260 @@ export default function CropDetails() {
     }
   };
 
+  // Build 2-letter monogram for farmer
+  const nameParts = cropData.farmer.name.trim().split(' ');
+  const monogram =
+    nameParts.length >= 2
+      ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+      : cropData.farmer.name.slice(0, 2).toUpperCase();
+
+  const bestBid = Math.max(...cropData.currentBids.map((b) => b.amount));
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* ── Header ── */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <ArrowLeft size={20} color={Colors.foreground} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('cropDetails.title')}</Text>
         <LanguageSwitcherButton compact />
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Image Gallery */}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* ── Image Carousel ── */}
         <View style={styles.gallery}>
           <Image
             source={cropData.images[currentImageIndex]}
             style={styles.galleryImage}
             resizeMode="cover"
           />
-
-          <View style={styles.indicators}>
+          <View style={styles.imageDots}>
             {cropData.images.map((_, index) => (
               <TouchableOpacity
                 key={index}
                 onPress={() => setCurrentImageIndex(index)}
-                style={[
-                  styles.indicator,
-                  {
-                    backgroundColor:
-                      index === currentImageIndex
-                        ? Colors.white
-                        : 'rgba(255,255,255,0.5)',
-                  },
-                ]}
+                style={[styles.dot, index === currentImageIndex && styles.dotActive]}
               />
             ))}
           </View>
-
-          <View style={styles.qualityBadge}>
-            <Text style={styles.qualityText}>{cropData.quality}</Text>
+          <View style={styles.qualityTag}>
+            <ShieldCheck size={12} color={Colors.white} />
+            <Text style={styles.qualityTagText}>{cropData.quality}</Text>
           </View>
         </View>
 
-        {/* Basic Info */}
-        <View style={styles.infoSection}>
+        {/* ── Title & Price ── */}
+        <View style={styles.titleCard}>
           <View style={styles.titleRow}>
-            <Text style={styles.title}>{cropData.title}</Text>
-            <View style={styles.priceColumn}>
-              <Text style={styles.price}>
-                ₨{cropData.price.toLocaleString()}
-              </Text>
-              <Text style={styles.priceUnit}>فی من</Text>
+            <Text style={styles.cropTitle}>{cropData.title}</Text>
+            <View style={styles.priceBox}>
+              <Text style={styles.priceValue}>PKR {cropData.price.toLocaleString()}</Text>
+              <Text style={styles.priceUnit}>{isUrdu ? 'فی من' : 'per Mann'}</Text>
             </View>
           </View>
 
-          <View style={styles.metaRow}>
-            <View style={styles.metaItem}>
-              <MapPin size={14} color={Colors.mutedForeground} />
-              <Text style={styles.metaText}>{cropData.location}</Text>
+          {/* Key stats chips */}
+          <View style={styles.statsChips}>
+            <View style={styles.chip}>
+              <Package size={12} color={Colors.primary} />
+              <Text style={styles.chipText}>{cropData.quantity}</Text>
             </View>
-            <View style={styles.metaItem}>
-              <Calendar size={14} color={Colors.mutedForeground} />
-              <Text style={styles.metaText}>{cropData.harvestDate}</Text>
+            <View style={styles.chip}>
+              <MapPin size={12} color={Colors.primary} />
+              <Text style={styles.chipText}>{cropData.location}</Text>
+            </View>
+            <View style={styles.chip}>
+              <Calendar size={12} color={Colors.primary} />
+              <Text style={styles.chipText}>{cropData.harvestDate}</Text>
             </View>
           </View>
 
-          <Text style={styles.quantity}>مقدار: {cropData.quantity}</Text>
+          <Text style={styles.description}>{cropData.description}</Text>
         </View>
 
-        {/* Voice Description */}
+        {/* ── Voice Description ── */}
         {cropData.voiceDescription && (
-          <View style={styles.voiceBox}>
-            <View style={styles.voiceHeader}>
-              <View style={styles.voiceTitleRow}>
-                <Volume2 size={20} color={Colors.primary} />
-                <Text style={styles.voiceTitle}>آواز میں تفصیل</Text>
+          <View style={[styles.card, Shadows.soft]}>
+            <View style={styles.voiceRow}>
+              <View style={styles.voiceLeft}>
+                <View style={styles.voiceIconBg}>
+                  <Volume2 size={18} color={Colors.primary} />
+                </View>
+                <View>
+                  <Text style={styles.voiceTitle}>
+                    {isUrdu ? 'آواز میں تفصیل' : 'Voice Description'}
+                  </Text>
+                  <Text style={styles.voiceSub}>
+                    {isUrdu ? 'کسان کی زبان میں' : 'By the farmer'}
+                  </Text>
+                </View>
               </View>
-              <TouchableOpacity onPress={handlePlayVoice} style={styles.playButton}>
-                {isPlayingVoice ? (
-                  <Pause size={16} color={Colors.primary} />
-                ) : (
-                  <Play size={16} color={Colors.primary} />
-                )}
-                <Text style={styles.playText}>
-                  {isPlayingVoice ? 'رک جائیں' : 'سنیں'}
-                </Text>
+              <TouchableOpacity onPress={handlePlayVoice} style={styles.playBtn}>
+                {isPlayingVoice
+                  ? <Pause size={18} color={Colors.primary} />
+                  : <Play size={18} color={Colors.primary} />}
               </TouchableOpacity>
             </View>
-
             {isPlayingVoice && (
-              <View style={styles.playingIndicator}>
-                <View style={styles.waveform}>
-                  {[...Array(8)].map((_, i) => (
-                    <View
-                      key={i}
-                      style={[
-                        styles.waveBar,
-                        { height: 10 + Math.random() * 20 },
-                      ]}
-                    />
-                  ))}
-                </View>
-                <Text style={styles.playingText}>چل رہا ہے...</Text>
+              <View style={styles.waveformRow}>
+                {[...Array(12)].map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.waveBar,
+                      { height: 8 + ((i * 7) % 20) },
+                    ]}
+                  />
+                ))}
               </View>
             )}
           </View>
         )}
 
-        {/* Specifications */}
+        {/* ── Specifications ── */}
         <View style={[styles.card, Shadows.soft]}>
-          <Text style={styles.cardTitle}>تفصیلات</Text>
+          <Text style={styles.cardTitle}>
+            {isUrdu ? 'تفصیلات' : 'Specifications'}
+          </Text>
           <View style={styles.specGrid}>
             {cropData.specifications.map((spec, index) => (
-              <View key={index} style={styles.specRow}>
-                <Text style={styles.specLabel}>{spec.label}:</Text>
+              <View key={index} style={styles.specCell}>
+                <Text style={styles.specLabel}>{spec.label}</Text>
                 <Text style={styles.specValue}>{spec.value}</Text>
               </View>
             ))}
           </View>
         </View>
 
-        {/* Farmer Info */}
+        {/* ── Farmer Info ── */}
         <View style={[styles.card, Shadows.soft]}>
-          <Text style={styles.cardTitle}>کسان کی معلومات</Text>
+          <Text style={styles.cardTitle}>
+            {isUrdu ? 'کسان کی معلومات' : 'Farmer Information'}
+          </Text>
+
           <View style={styles.farmerRow}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {cropData.farmer.name.charAt(0)}
-              </Text>
+            <View style={styles.farmerAvatar}>
+              <Text style={styles.farmerAvatarText}>{monogram}</Text>
             </View>
             <View style={styles.farmerInfo}>
               <Text style={styles.farmerName}>{cropData.farmer.name}</Text>
               <View style={styles.ratingRow}>
-                <Star size={14} color={Colors.warning} fill={Colors.warning} />
+                <Star size={13} color={Colors.warning} fill={Colors.warning} />
                 <Text style={styles.ratingText}>{cropData.farmer.rating}</Text>
-                <Text style={styles.reviewText}>
-                  ({cropData.farmer.totalReviews} ریویوز)
+                <Text style={styles.reviewCount}>
+                  ({cropData.farmer.totalReviews} {isUrdu ? 'ریویوز' : 'reviews'})
                 </Text>
               </View>
             </View>
+            <View style={styles.farmerBadge}>
+              <ShieldCheck size={14} color={Colors.success} />
+              <Text style={styles.farmerBadgeText}>{isUrdu ? 'تصدیق شدہ' : 'Verified'}</Text>
+            </View>
           </View>
 
-          <View style={styles.farmerStats}>
-            <View style={styles.farmerStat}>
-              <Text style={styles.farmerStatLabel}>ممبر:</Text>
-              <Text style={styles.farmerStatValue}>
-                {cropData.farmer.memberSince} سے
-              </Text>
+          <View style={styles.farmerMeta}>
+            <View style={styles.farmerMetaItem}>
+              <Text style={styles.farmerMetaLabel}>{isUrdu ? 'ممبر' : 'Member since'}</Text>
+              <Text style={styles.farmerMetaValue}>{cropData.farmer.memberSince}</Text>
             </View>
-            <View style={styles.farmerStat}>
-              <Text style={styles.farmerStatLabel}>فروخت:</Text>
-              <Text style={styles.farmerStatValue}>
-                {cropData.farmer.completedSales}
-              </Text>
+            <View style={styles.farmerMetaDivider} />
+            <View style={styles.farmerMetaItem}>
+              <Text style={styles.farmerMetaLabel}>{isUrdu ? 'مکمل فروخت' : 'Completed sales'}</Text>
+              <Text style={styles.farmerMetaValue}>{cropData.farmer.completedSales}</Text>
             </View>
           </View>
 
           <View style={styles.contactRow}>
-            <TouchableOpacity style={styles.contactButton}>
+            <TouchableOpacity style={styles.contactBtn}>
               <Phone size={16} color={Colors.foreground} />
-              <Text style={styles.contactButtonText}>کال کریں</Text>
+              <Text style={styles.contactBtnText}>{isUrdu ? 'کال' : 'Call'}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.contactButton}
+              style={[styles.contactBtn, styles.contactBtnPrimary]}
               onPress={() => router.push('/trade/trade-101')}
             >
-              <MessageCircle size={16} color={Colors.primary} />
-              <Text style={[styles.contactButtonText, { color: Colors.primary }]}>پیغام / چیٹ</Text>
+              <MessageCircle size={16} color={Colors.white} />
+              <Text style={styles.contactBtnPrimaryText}>{isUrdu ? 'چیٹ' : 'Chat'}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Current Bids */}
+        {/* ── Current Bids ── */}
         <View style={[styles.card, Shadows.soft]}>
-          <Text style={styles.cardTitle}>موجودہ بولیاں</Text>
-          <View style={styles.bidList}>
-            {cropData.currentBids.map((bid, index) => (
-              <View key={index} style={styles.bidRow}>
+          <Text style={styles.cardTitle}>
+            {isUrdu ? 'موجودہ بولیاں' : 'Current Bids'}
+          </Text>
+          {cropData.currentBids.map((bid, index) => (
+            <View key={index} style={[styles.bidRow, index < cropData.currentBids.length - 1 && styles.bidRowBorder]}>
+              <View style={styles.bidLeft}>
+                <View style={styles.bidRank}>
+                  <Text style={styles.bidRankText}>{index + 1}</Text>
+                </View>
                 <View>
                   <Text style={styles.bidderName}>{bid.bidder}</Text>
                   <Text style={styles.bidTime}>{bid.time}</Text>
                 </View>
-                <Text style={styles.bidAmount}>
-                  ₨{bid.amount.toLocaleString()}
-                </Text>
               </View>
-            ))}
-          </View>
+              <Text style={styles.bidAmount}>PKR {bid.amount.toLocaleString()}</Text>
+            </View>
+          ))}
         </View>
 
-        {/* Make Your Bid Section */}
-        <View style={styles.bidSection}>
-          <Text style={styles.bidSectionTitle}>اپنی بولی لگائیں</Text>
+        {/* ── Place Your Bid ── */}
+        <View style={[styles.bidCard, Shadows.soft]}>
+          <Text style={styles.bidCardTitle}>
+            {isUrdu ? 'اپنی بولی لگائیں' : 'Place Your Bid'}
+          </Text>
 
-          <Text style={styles.inputLabel}>آپ کی بولی (PKR فی من)</Text>
-          <View style={styles.inputWrapper}>
-            <Text style={styles.inputPrefix}>₨</Text>
+          <View style={styles.bestBidInfo}>
+            <Text style={styles.bestBidLabel}>
+              {isUrdu ? 'بہترین بولی:' : 'Top bid:'}
+            </Text>
+            <Text style={styles.bestBidValue}>PKR {bestBid.toLocaleString()}</Text>
+          </View>
+
+          <View style={styles.bidInputRow}>
+            <Text style={styles.bidInputPrefix}>PKR</Text>
             <TextInput
               style={styles.bidInput}
               keyboardType="number-pad"
               value={customBidAmount}
               onChangeText={setCustomBidAmount}
-              placeholder="جیسے 65000"
+              placeholder={isUrdu ? 'مثلاً 65000' : 'e.g. 65000'}
               placeholderTextColor={Colors.mutedForeground}
             />
           </View>
 
-          <View style={styles.bestBidRow}>
-            <Text style={styles.bestBidLabel}>موجودہ بہترین بولی:</Text>
-            <Text style={styles.bestBidValue}>
-              ₨
-              {Math.max(
-                ...cropData.currentBids.map((b) => b.amount)
-              ).toLocaleString()}
-            </Text>
-          </View>
-
           <TouchableOpacity
             style={[
-              styles.bidButton,
-              (!customBidAmount || parseInt(customBidAmount) <= 0) &&
-                styles.disabledButton,
+              styles.bidSubmitBtn,
+              (!customBidAmount || parseInt(customBidAmount) <= 0) && styles.bidSubmitDisabled,
             ]}
             onPress={handleCustomBid}
             disabled={!customBidAmount || parseInt(customBidAmount) <= 0}
           >
-            <Text style={styles.bidButtonText}>
-              ₨{customBidAmount ? parseInt(customBidAmount).toLocaleString() : '0'}{' '}
-              میں بولی لگائیں
+            <Text style={styles.bidSubmitText}>
+              {isUrdu ? 'بولی جمع کریں' : 'Submit Bid'}
+              {customBidAmount && parseInt(customBidAmount) > 0
+                ? ` — PKR ${parseInt(customBidAmount).toLocaleString()}`
+                : ''}
             </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* Fixed Bottom Action - Single Button: بولی لگائیں */}
+      {/* ── Fixed Bottom CTA ── */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
-          style={styles.singleBottomButton}
+          style={styles.bottomCTA}
           onPress={() => router.push('/trade/trade-101')}
           activeOpacity={0.85}
         >
-          <Text style={styles.singleBottomButtonText}>بولی لگائیں</Text>
+          <MessageCircle size={18} color={Colors.white} />
+          <Text style={styles.bottomCTAText}>
+            {isUrdu ? 'بولی لگائیں' : 'Start Negotiation'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -339,344 +359,396 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+    backgroundColor: Colors.background,
   },
-  backButton: {
-    padding: Spacing.sm,
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: Colors.muted,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: FontSize.lg,
     fontWeight: '700',
     color: Colors.foreground,
   },
-  headerSpacer: {
-    width: 36,
-  },
   scrollContent: {
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
     paddingBottom: 120,
+    gap: Spacing.md,
   },
+  // Gallery
   gallery: {
     position: 'relative',
-    marginBottom: Spacing.lg,
   },
   galleryImage: {
     width: '100%',
-    height: 240,
+    height: 220,
     borderRadius: Radius.xl,
   },
-  indicators: {
+  imageDots: {
     position: 'absolute',
     bottom: Spacing.md,
-    left: 0,
-    right: 0,
+    alignSelf: 'center',
     flexDirection: 'row',
-    justifyContent: 'center',
     gap: Spacing.sm,
   },
-  indicator: {
-    width: 8,
-    height: 8,
+  dot: {
+    width: 7,
+    height: 7,
     borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.5)',
   },
-  qualityBadge: {
+  dotActive: {
+    backgroundColor: Colors.white,
+    width: 20,
+  },
+  qualityTag: {
     position: 'absolute',
     top: Spacing.md,
     right: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: Colors.success,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
     borderRadius: Radius.md,
   },
-  qualityText: {
+  qualityTagText: {
     color: Colors.white,
-    fontSize: FontSize.sm,
-    fontWeight: '600',
+    fontSize: FontSize.xs,
+    fontWeight: '700',
   },
-  infoSection: {
-    marginBottom: Spacing.lg,
+  // Title Card
+  titleCard: {
+    gap: Spacing.sm,
   },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: Spacing.sm,
+    gap: Spacing.md,
   },
-  title: {
+  cropTitle: {
     flex: 1,
     fontSize: FontSize.xl,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.foreground,
-    marginRight: Spacing.sm,
   },
-  priceColumn: {
+  priceBox: {
     alignItems: 'flex-end',
   },
-  price: {
-    fontSize: FontSize.xxl,
-    fontWeight: '700',
+  priceValue: {
+    fontSize: FontSize.lg,
+    fontWeight: '800',
     color: Colors.primary,
   },
   priceUnit: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     color: Colors.mutedForeground,
   },
-  metaRow: {
+  statsChips: {
     flexDirection: 'row',
-    gap: Spacing.lg,
-    marginBottom: Spacing.md,
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
   },
-  metaItem: {
+  chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.xs,
+    gap: 4,
+    backgroundColor: Colors.primaryBg,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 5,
+    borderRadius: Radius.sm,
   },
-  metaText: {
+  chipText: {
+    fontSize: FontSize.xs,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  description: {
     fontSize: FontSize.sm,
     color: Colors.mutedForeground,
+    lineHeight: 20,
   },
-  quantity: {
-    fontSize: FontSize.lg,
-    fontWeight: '600',
-    color: Colors.foreground,
-  },
-  voiceBox: {
-    backgroundColor: Colors.gradientVoiceEnd,
-    borderRadius: Radius.xl,
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  voiceHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  voiceTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  voiceTitle: {
-    fontSize: FontSize.md,
-    fontWeight: '600',
-    color: Colors.foreground,
-  },
-  playButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  playText: {
-    color: Colors.primary,
-    fontWeight: '600',
-    fontSize: FontSize.sm,
-  },
-  playingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginTop: Spacing.md,
-  },
-  waveform: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  waveBar: {
-    width: 4,
-    backgroundColor: Colors.primary,
-    borderRadius: 2,
-  },
-  playingText: {
-    fontSize: FontSize.sm,
-    color: Colors.primary,
-  },
+  // Card
   card: {
     backgroundColor: Colors.card,
     borderRadius: Radius.xl,
     padding: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.border,
-    marginBottom: Spacing.lg,
+    gap: Spacing.md,
   },
   cardTitle: {
     fontSize: FontSize.md,
     fontWeight: '700',
     color: Colors.foreground,
-    marginBottom: Spacing.md,
   },
+  // Voice
+  voiceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  voiceLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  voiceIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primaryBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voiceTitle: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
+    color: Colors.foreground,
+  },
+  voiceSub: {
+    fontSize: FontSize.xs,
+    color: Colors.mutedForeground,
+    marginTop: 1,
+  },
+  playBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primaryBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: `${Colors.primary}40`,
+  },
+  waveformRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingTop: Spacing.sm,
+  },
+  waveBar: {
+    width: 4,
+    backgroundColor: Colors.primary,
+    borderRadius: 2,
+    opacity: 0.8,
+  },
+  // Specs
   specGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
-  specRow: {
+  specCell: {
     width: '47%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    backgroundColor: Colors.muted,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    gap: 2,
   },
   specLabel: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     color: Colors.mutedForeground,
+    fontWeight: '500',
   },
   specValue: {
     fontSize: FontSize.sm,
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.foreground,
   },
+  // Farmer
   farmerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-    marginBottom: Spacing.md,
   },
-  avatar: {
+  farmerAvatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
     backgroundColor: Colors.primaryBg,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
   },
-  avatarText: {
-    fontSize: FontSize.lg,
-    fontWeight: '700',
+  farmerAvatarText: {
+    fontSize: FontSize.md,
+    fontWeight: '800',
     color: Colors.primary,
+    letterSpacing: 1,
   },
   farmerInfo: {
     flex: 1,
+    gap: 2,
   },
   farmerName: {
     fontSize: FontSize.md,
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.foreground,
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.xs,
-    marginTop: Spacing.xs,
+    gap: 4,
   },
   ratingText: {
     fontSize: FontSize.sm,
+    fontWeight: '700',
     color: Colors.foreground,
   },
-  reviewText: {
-    fontSize: FontSize.sm,
+  reviewCount: {
+    fontSize: FontSize.xs,
     color: Colors.mutedForeground,
   },
-  farmerStats: {
+  farmerBadge: {
     flexDirection: 'row',
-    gap: Spacing.lg,
-    marginBottom: Spacing.md,
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.primaryBg,
   },
-  farmerStat: {
+  farmerBadgeText: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+    color: Colors.success,
+  },
+  farmerMeta: {
     flexDirection: 'row',
-    gap: Spacing.xs,
+    alignItems: 'center',
+    backgroundColor: Colors.muted,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
   },
-  farmerStatLabel: {
-    fontSize: FontSize.sm,
+  farmerMetaItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  farmerMetaLabel: {
+    fontSize: FontSize.xs,
     color: Colors.mutedForeground,
   },
-  farmerStatValue: {
-    fontSize: FontSize.sm,
-    fontWeight: '600',
+  farmerMetaValue: {
+    fontSize: FontSize.md,
+    fontWeight: '800',
     color: Colors.foreground,
+  },
+  farmerMetaDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: Colors.border,
   },
   contactRow: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
-  contactButton: {
+  contactBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.xs,
+    gap: Spacing.sm,
     paddingVertical: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.lg,
   },
-  contactButtonText: {
+  contactBtnText: {
     fontSize: FontSize.sm,
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.foreground,
   },
-  bidList: {
-    gap: Spacing.md,
+  contactBtnPrimary: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+    flex: 2,
   },
+  contactBtnPrimaryText: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  // Bids
   bidRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  bidRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  bidLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  bidRank: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.primaryBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bidRankText: {
+    fontSize: FontSize.sm,
+    fontWeight: '800',
+    color: Colors.primary,
   },
   bidderName: {
-    fontSize: FontSize.md,
+    fontSize: FontSize.sm,
     fontWeight: '600',
     color: Colors.foreground,
   },
   bidTime: {
     fontSize: FontSize.xs,
     color: Colors.mutedForeground,
-    marginTop: Spacing.xs,
+    marginTop: 1,
   },
   bidAmount: {
-    fontSize: FontSize.lg,
-    fontWeight: '700',
+    fontSize: FontSize.md,
+    fontWeight: '800',
     color: Colors.primary,
   },
-  bidSection: {
+  // Bid Card
+  bidCard: {
     backgroundColor: Colors.primaryBg,
-    borderWidth: 1,
-    borderColor: `${Colors.primary}33`,
     borderRadius: Radius.xl,
     padding: Spacing.lg,
-    marginBottom: Spacing.lg,
+    borderWidth: 1,
+    borderColor: `${Colors.primary}30`,
+    gap: Spacing.md,
   },
-  bidSectionTitle: {
+  bidCardTitle: {
     fontSize: FontSize.md,
     fontWeight: '700',
     color: Colors.primary,
-    marginBottom: Spacing.md,
   },
-  inputLabel: {
-    fontSize: FontSize.sm,
-    fontWeight: '600',
-    color: Colors.foreground,
-    marginBottom: Spacing.xs,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.card,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.lg,
-    paddingHorizontal: Spacing.md,
-    marginBottom: Spacing.sm,
-  },
-  inputPrefix: {
-    color: Colors.mutedForeground,
-    fontSize: FontSize.md,
-    marginRight: Spacing.xs,
-  },
-  bidInput: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    fontSize: FontSize.md,
-    color: Colors.foreground,
-  },
-  bestBidRow: {
+  bestBidInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: Spacing.md,
+    alignItems: 'center',
   },
   bestBidLabel: {
     fontSize: FontSize.sm,
@@ -684,23 +756,46 @@ const styles = StyleSheet.create({
   },
   bestBidValue: {
     fontSize: FontSize.sm,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.primary,
   },
-  bidButton: {
-    backgroundColor: Colors.primary,
-    paddingVertical: Spacing.md,
+  bidInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
     borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.md,
+    height: 52,
+  },
+  bidInputPrefix: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
+    color: Colors.mutedForeground,
+    marginRight: Spacing.sm,
+  },
+  bidInput: {
+    flex: 1,
+    fontSize: FontSize.lg,
+    fontWeight: '700',
+    color: Colors.foreground,
+  },
+  bidSubmitBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.lg,
+    paddingVertical: 14,
     alignItems: 'center',
   },
-  bidButtonText: {
+  bidSubmitDisabled: {
+    opacity: 0.45,
+  },
+  bidSubmitText: {
     color: Colors.white,
     fontSize: FontSize.md,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  disabledButton: {
-    opacity: 0.5,
-  },
+  // Bottom Bar
   bottomBar: {
     position: 'absolute',
     bottom: 0,
@@ -710,48 +805,20 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     padding: Spacing.lg,
-    flexDirection: 'row',
-    gap: Spacing.md,
+    paddingBottom: 28,
   },
-  bottomSecondaryButton: {
-    flex: 1,
+  bottomCTA: {
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.lg,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.xs,
-    paddingVertical: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.lg,
+    gap: Spacing.sm,
   },
-  bottomSecondaryText: {
-    fontSize: FontSize.md,
-    fontWeight: '600',
-    color: Colors.foreground,
-  },
-  bottomPrimaryButton: {
-    flex: 1,
-    backgroundColor: Colors.primary,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.lg,
-    alignItems: 'center',
-  },
-  bottomPrimaryText: {
+  bottomCTAText: {
     color: Colors.white,
-    fontSize: FontSize.md,
-    fontWeight: '600',
-  },
-  singleBottomButton: {
-    flex: 1,
-    backgroundColor: Colors.primary,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  singleBottomButtonText: {
-    color: Colors.white,
-    fontSize: FontSize.md,
+    fontSize: FontSize.lg,
     fontWeight: '700',
   },
 });

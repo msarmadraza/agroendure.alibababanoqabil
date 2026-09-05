@@ -13,10 +13,15 @@ import { useRouter } from 'expo-router';
 import {
   Bell,
   TrendingUp,
+  TrendingDown,
   Cloud,
   Building2,
   Handshake,
   Flame,
+  Mic,
+  ChevronRight,
+  Droplets,
+  Wind,
 } from 'lucide-react-native';
 import { VoiceButton } from '@/components/VoiceButton';
 import { CropCard } from '@/components/CropCard';
@@ -74,21 +79,39 @@ export default function Dashboard() {
   const marketPrices = [
     {
       crop: isUrdu ? 'گندم' : 'Wheat',
-      price: isUrdu ? 'PKR 85,000/من' : 'PKR 85,000/Mann',
+      price: isUrdu ? '85,000/من' : '85,000/Mann',
       change: '+2.5%',
       up: true,
     },
     {
       crop: isUrdu ? 'چاول' : 'Rice',
-      price: isUrdu ? 'PKR 120,000/من' : 'PKR 120,000/Mann',
+      price: isUrdu ? '120,000/من' : '120,000/Mann',
       change: '-1.2%',
       up: false,
     },
     {
       crop: isUrdu ? 'کپاس' : 'Cotton',
-      price: isUrdu ? 'PKR 95,000/من' : 'PKR 95,000/Mann',
+      price: isUrdu ? '95,000/من' : '95,000/Mann',
       change: '+5.8%',
       up: true,
+    },
+  ];
+
+  const metrics = [
+    {
+      icon: Building2,
+      value: String(activeListingsCount).padStart(2, '0'),
+      label: t('home.activeListings'),
+    },
+    {
+      icon: Handshake,
+      value: String(activeNegotiationsCount).padStart(2, '0'),
+      label: t('home.activeNegotiations'),
+    },
+    {
+      icon: Flame,
+      value: topActiveBid > 0 ? `${(topActiveBid / 1000).toFixed(0)}K` : '—',
+      label: t('home.topActiveBid'),
     },
   ];
 
@@ -98,35 +121,35 @@ export default function Dashboard() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* ── Header ── */}
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Image
-              source={require('@/assets/agroendure-logo.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <Text style={styles.greeting}>
-              {isUrdu
-                ? 'السلام علیکم، احمد! آپ کی فصل کی معلومات'
-                : 'Welcome back, Ahmad! Mandi Overview'}
-            </Text>
-          </View>
-
-          <View style={styles.headerRight}>
-            <LanguageSwitcherButton />
-            <TouchableOpacity style={styles.iconButton}>
+          <Image
+            source={require('@/assets/agroendure-logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <View style={styles.headerActions}>
+            <LanguageSwitcherButton compact />
+            <TouchableOpacity style={styles.bellButton}>
               <Bell size={20} color={Colors.foreground} />
-              <View style={styles.notificationDot} />
+              <View style={styles.bellDot} />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Voice Recording Section */}
-        <View style={styles.voiceSection}>
-          <Text style={styles.voiceTitle}>{t('home.voiceListingTitle')}</Text>
-          <Text style={styles.voiceSubtitle}>{t('home.voiceListingSub')}</Text>
+        <View style={styles.divider} />
 
+        {/* ── Voice CTA ── */}
+        <View style={styles.voiceCard}>
+          <View style={styles.voiceCardLeft}>
+            <View style={styles.micCircle}>
+              <Mic size={22} color={Colors.white} />
+            </View>
+            <View style={styles.voiceTexts}>
+              <Text style={styles.voiceTitle}>{t('home.voiceListingTitle')}</Text>
+              <Text style={styles.voiceSubtitle}>{t('home.voiceListingSub')}</Text>
+            </View>
+          </View>
           <VoiceButton
             isRecording={isRecording}
             onStartRecording={() => setIsRecording(true)}
@@ -134,98 +157,71 @@ export default function Dashboard() {
               setIsRecording(false);
               router.push('/(tabs)/add');
             }}
-            size="lg"
+            size="sm"
           />
-
-          {isRecording && (
-            <Text style={styles.recordingText}>{t('home.listeningVoice')}</Text>
-          )}
         </View>
+        {isRecording && (
+          <Text style={styles.recordingText}>{t('home.listeningVoice')}</Text>
+        )}
 
-        {/* Dashboard Metrics */}
+        {/* ── Metrics ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
+          <Text style={styles.sectionLabel}>
             {activeRole === 'seller' ? t('home.farmerDashboard') : t('home.buyerDashboard')}
           </Text>
           <View style={styles.metricsRow}>
-            <View style={[styles.metricCard, Shadows.soft]}>
-              <View style={styles.metricIconWrapper}>
-                <Building2 size={16} color={Colors.primary} />
-              </View>
-              <Text style={styles.metricValue}>
-                {String(activeListingsCount).padStart(2, '0')}
-              </Text>
-              <Text style={styles.metricLabel}>{t('home.activeListings')}</Text>
-            </View>
-
-            <View style={[styles.metricCard, Shadows.soft]}>
-              <View style={styles.metricIconWrapper}>
-                <Handshake size={16} color={Colors.primary} />
-              </View>
-              <Text style={styles.metricValue}>
-                {String(activeNegotiationsCount).padStart(2, '0')}
-              </Text>
-              <Text style={styles.metricLabel}>{t('home.activeNegotiations')}</Text>
-            </View>
-
-            <View style={[styles.metricCard, Shadows.soft]}>
-              <View style={styles.metricIconWrapper}>
-                <Flame size={16} color={Colors.primary} />
-              </View>
-              <Text style={styles.metricLabel}>{t('home.topActiveBid')}</Text>
-              <Text style={styles.metricBidValue}>
-                {topActiveBid > 0
-                  ? `PKR ${topActiveBid.toLocaleString()}`
-                  : 'PKR 0'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Market Prices Ticker */}
-        <View style={[styles.card, Shadows.soft]}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>{t('home.todayPrices')}</Text>
-            <TrendingUp size={16} color={Colors.primary} />
-          </View>
-          <View style={styles.priceList}>
-            {marketPrices.map((item, index) => (
-              <View key={index} style={styles.priceRow}>
-                <Text style={styles.priceCrop}>{item.crop}</Text>
-                <View style={styles.priceRight}>
-                  <Text style={styles.priceValue}>{item.price}</Text>
-                  <View
-                    style={[
-                      styles.changeBadge,
-                      { backgroundColor: item.up ? Colors.successBg : Colors.errorBg },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.changeText,
-                        { color: item.up ? Colors.success : Colors.error },
-                      ]}
-                    >
-                      {item.change}
-                    </Text>
-                  </View>
+            {metrics.map((m, i) => (
+              <View key={i} style={[styles.metricCard, Shadows.soft]}>
+                <View style={styles.metricIconBg}>
+                  <m.icon size={16} color={Colors.primary} />
                 </View>
+                <Text style={styles.metricValue}>{m.value}</Text>
+                <Text style={styles.metricLabel}>{m.label}</Text>
               </View>
             ))}
           </View>
         </View>
 
-        {/* Recent Listings */}
+        {/* ── Market Prices ── */}
+        <View style={[styles.card, Shadows.soft]}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>{t('home.todayPrices')}</Text>
+            <TrendingUp size={16} color={Colors.primary} />
+          </View>
+          {marketPrices.map((item, index) => (
+            <View key={index} style={[styles.priceRow, index < marketPrices.length - 1 && styles.priceRowBorder]}>
+              <Text style={styles.priceCrop}>{item.crop}</Text>
+              <View style={styles.priceRight}>
+                <Text style={styles.priceValue}>PKR {item.price}</Text>
+                <View style={[styles.changeBadge, { backgroundColor: item.up ? Colors.successBg : Colors.errorBg }]}>
+                  {item.up
+                    ? <TrendingUp size={10} color={Colors.success} />
+                    : <TrendingDown size={10} color={Colors.error} />
+                  }
+                  <Text style={[styles.changeText, { color: item.up ? Colors.success : Colors.error }]}>
+                    {item.change}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* ── Recent Listings ── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t('home.recentListings')}</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/browse')}>
-              <Text style={styles.seeAll}>{t('home.seeAll')}</Text>
+            <Text style={styles.sectionLabel}>{t('home.recentListings')}</Text>
+            <TouchableOpacity
+              style={styles.seeAllBtn}
+              onPress={() => router.push('/(tabs)/browse')}
+            >
+              <Text style={styles.seeAllText}>{t('home.seeAll')}</Text>
+              <ChevronRight size={14} color={Colors.primary} />
             </TouchableOpacity>
           </View>
 
           {isLoadingListings ? (
-            <View style={styles.listingsLoading}>
+            <View style={styles.loadingBox}>
               <ActivityIndicator size="small" color={Colors.primary} />
             </View>
           ) : (
@@ -242,19 +238,25 @@ export default function Dashboard() {
           )}
         </View>
 
-        {/* Weather Widget */}
-        <View style={styles.weatherCard}>
-          <View>
-            <View style={styles.weatherLocation}>
-              <Cloud size={20} color={Colors.white} />
+        {/* ── Weather ── */}
+        <View style={[styles.weatherCard, Shadows.soft]}>
+          <View style={styles.weatherLeft}>
+            <View style={styles.weatherLocationRow}>
+              <Cloud size={16} color={Colors.primary} />
               <Text style={styles.weatherCity}>{t('home.weatherCity')}</Text>
             </View>
             <Text style={styles.weatherTemp}>28°C</Text>
             <Text style={styles.weatherCondition}>{t('home.weatherCondition')}</Text>
           </View>
-          <View style={styles.weatherDetails}>
-            <Text style={styles.weatherDetailText}>{t('home.humidity')}: 65%</Text>
-            <Text style={styles.weatherDetailText}>{t('home.wind')}: 12 {t('home.windUnit')}</Text>
+          <View style={styles.weatherRight}>
+            <View style={styles.weatherDetail}>
+              <Droplets size={14} color={Colors.mutedForeground} />
+              <Text style={styles.weatherDetailText}>65%</Text>
+            </View>
+            <View style={styles.weatherDetail}>
+              <Wind size={14} color={Colors.mutedForeground} />
+              <Text style={styles.weatherDetailText}>12 {t('home.windUnit')}</Text>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -268,48 +270,35 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   scrollContent: {
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
     paddingBottom: 100,
+    gap: Spacing.xl,
   },
+  // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.lg,
-  },
-  headerLeft: {
-    flex: 1,
-    gap: Spacing.xs,
+    alignItems: 'center',
   },
   logo: {
     height: 32,
     width: 140,
   },
-  greeting: {
-    fontSize: FontSize.sm,
-    color: Colors.mutedForeground,
-  },
-  headerRight: {
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
   },
-  picker: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.lg,
+  bellButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.muted,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  pickerText: {
-    fontSize: FontSize.sm,
-    fontWeight: '600',
-    color: Colors.foreground,
-  },
-  iconButton: {
-    padding: Spacing.sm,
-    position: 'relative',
-  },
-  notificationDot: {
+  bellDot: {
     position: 'absolute',
     top: 6,
     right: 6,
@@ -317,51 +306,83 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: Colors.error,
+    borderWidth: 1.5,
+    borderColor: Colors.white,
   },
-  voiceSection: {
-    alignItems: 'center',
-    backgroundColor: Colors.gradientVoiceEnd,
+  divider: {
+    height: 1,
+    backgroundColor: Colors.borderLight,
+    marginHorizontal: -Spacing.lg,
+    marginTop: -Spacing.md,
+  },
+  // Voice Card
+  voiceCard: {
+    backgroundColor: Colors.primary,
     borderRadius: Radius.xl,
-    padding: Spacing.xl,
-    gap: Spacing.sm,
-    marginBottom: Spacing.xl,
+    padding: Spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  voiceCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    flex: 1,
+  },
+  micCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voiceTexts: {
+    flex: 1,
+    gap: 2,
   },
   voiceTitle: {
-    fontSize: FontSize.lg,
+    fontSize: FontSize.md,
     fontWeight: '700',
-    color: Colors.foreground,
+    color: Colors.white,
   },
   voiceSubtitle: {
-    fontSize: FontSize.sm,
-    color: Colors.mutedForeground,
-    marginBottom: Spacing.sm,
-    textAlign: 'center',
+    fontSize: FontSize.xs,
+    color: 'rgba(255,255,255,0.8)',
   },
   recordingText: {
-    marginTop: Spacing.sm,
     fontSize: FontSize.sm,
     color: Colors.primary,
     fontWeight: '600',
+    textAlign: 'center',
+    marginTop: -Spacing.md,
   },
+  // Sections
   section: {
-    marginBottom: Spacing.xl,
     gap: Spacing.md,
-  },
-  sectionTitle: {
-    fontSize: FontSize.lg,
-    fontWeight: '700',
-    color: Colors.foreground,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  seeAll: {
+  sectionLabel: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
+    color: Colors.foreground,
+  },
+  seeAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  seeAllText: {
     fontSize: FontSize.sm,
     color: Colors.primary,
     fontWeight: '600',
   },
+  // Metrics
   metricsRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
@@ -373,39 +394,38 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
-    gap: 4,
+    gap: Spacing.xs,
     alignItems: 'flex-start',
   },
-  metricIconWrapper: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  metricIconBg: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: Colors.primaryBg,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 2,
   },
   metricValue: {
-    fontSize: FontSize.xl,
+    fontSize: FontSize.xxl,
     fontWeight: '800',
     color: Colors.primary,
+    lineHeight: 28,
   },
   metricLabel: {
     fontSize: FontSize.xs,
-    fontWeight: '600',
     color: Colors.mutedForeground,
+    fontWeight: '500',
+    lineHeight: 14,
   },
-  metricBidValue: {
-    fontSize: FontSize.md,
-    fontWeight: '800',
-    color: Colors.primary,
-  },
+  // Market Prices Card
   card: {
     backgroundColor: Colors.card,
     borderRadius: Radius.xl,
     padding: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.border,
-    marginBottom: Spacing.xl,
+    gap: 0,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -418,17 +438,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.foreground,
   },
-  priceList: {
-    gap: Spacing.md,
-  },
   priceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: Spacing.md,
+  },
+  priceRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
   },
   priceCrop: {
     fontSize: FontSize.md,
-    fontWeight: '500',
+    fontWeight: '600',
     color: Colors.foreground,
   },
   priceRight: {
@@ -438,59 +460,76 @@ const styles = StyleSheet.create({
   },
   priceValue: {
     fontSize: FontSize.sm,
-    color: Colors.foreground,
+    color: Colors.mutedForeground,
+    fontWeight: '500',
   },
   changeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
+    paddingVertical: 3,
     borderRadius: Radius.sm,
   },
   changeText: {
     fontSize: FontSize.xs,
-    fontWeight: '600',
+    fontWeight: '700',
   },
+  // Listings
   listings: {
-    gap: Spacing.lg,
+    gap: Spacing.md,
   },
-  listingsLoading: {
+  loadingBox: {
     alignItems: 'center',
     paddingVertical: Spacing.xxl,
   },
+  // Weather
   weatherCard: {
-    backgroundColor: Colors.blue500,
+    backgroundColor: Colors.card,
     borderRadius: Radius.xl,
     padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  weatherLocation: {
+  weatherLeft: {
+    gap: 2,
+  },
+  weatherLocationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
-    marginBottom: Spacing.xs,
+    gap: Spacing.xs,
+    marginBottom: 2,
   },
   weatherCity: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: FontSize.md,
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    color: Colors.foreground,
   },
   weatherTemp: {
-    color: Colors.white,
-    fontSize: FontSize.xxxl,
-    fontWeight: '700',
+    fontSize: 36,
+    fontWeight: '800',
+    color: Colors.foreground,
+    lineHeight: 44,
   },
   weatherCondition: {
-    color: Colors.white,
     fontSize: FontSize.sm,
-    opacity: 0.9,
+    color: Colors.mutedForeground,
   },
-  weatherDetails: {
+  weatherRight: {
+    gap: Spacing.sm,
     alignItems: 'flex-end',
+  },
+  weatherDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.xs,
   },
   weatherDetailText: {
-    color: Colors.white,
     fontSize: FontSize.sm,
+    color: Colors.mutedForeground,
+    fontWeight: '500',
   },
 });

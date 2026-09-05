@@ -10,7 +10,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Search, MapPin, List, Grid2x2, SlidersHorizontal } from 'lucide-react-native';
+import {
+  Search,
+  MapPin,
+  List,
+  Grid2x2,
+  SlidersHorizontal,
+  X,
+  ChevronDown,
+} from 'lucide-react-native';
 import { CropCard } from '@/components/CropCard';
 import { fetchListings } from '@/services/marketplace/listingService';
 import { listingToCropCard, CropCardView } from '@/services/marketplace/listingAdapter';
@@ -44,10 +52,10 @@ export default function CropBrowser() {
   }, [loadListings]);
 
   const categories = [
-    { id: 'all', name: t('browse.allCategories'), count: 156 },
-    { id: 'grains', name: t('browse.grains'), count: 89 },
-    { id: 'vegetables', name: t('browse.vegetables'), count: 42 },
-    { id: 'fruits', name: t('browse.fruits'), count: 25 },
+    { id: 'all', label: t('browse.allCategories'), count: 156 },
+    { id: 'grains', label: t('browse.grains'), count: 89 },
+    { id: 'vegetables', label: t('browse.vegetables'), count: 42 },
+    { id: 'fruits', label: t('browse.fruits'), count: 25 },
   ];
 
   const locations = [
@@ -58,7 +66,6 @@ export default function CropBrowser() {
     { id: 'sialkot', name: isUrdu ? 'سیالکوٹ' : 'Sialkot' },
   ];
 
-  // Live search filter over fetched listings (DB + locally created + demo)
   const filteredCrops = crops.filter((crop) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.trim().toLowerCase();
@@ -75,89 +82,116 @@ export default function CropBrowser() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* ── Header ── */}
         <View style={styles.header}>
-          <Text style={styles.title}>{t('browse.title')}</Text>
+          <View>
+            <Text style={styles.title}>{t('browse.title')}</Text>
+            <Text style={styles.subtitle}>
+              {isLoading
+                ? t('common.loading')
+                : `${filteredCrops.length} ${t('browse.cropsFound')}`}
+            </Text>
+          </View>
           <View style={styles.headerActions}>
             <LanguageSwitcherButton compact />
             <TouchableOpacity
-              style={styles.iconButton}
+              style={styles.iconBtn}
               onPress={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
             >
-              {viewMode === 'grid' ? (
-                <List size={20} color={Colors.foreground} />
-              ) : (
-                <Grid2x2 size={20} color={Colors.foreground} />
-              )}
+              {viewMode === 'grid'
+                ? <List size={18} color={Colors.foreground} />
+                : <Grid2x2 size={18} color={Colors.foreground} />}
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.iconButton}
+              style={[styles.iconBtn, showFilters && styles.iconBtnActive]}
               onPress={() => setShowFilters(!showFilters)}
             >
-              <SlidersHorizontal size={20} color={Colors.foreground} />
-              {showFilters && <View style={styles.filterDot} />}
+              <SlidersHorizontal size={18} color={showFilters ? Colors.primary : Colors.foreground} />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Search size={20} color={Colors.mutedForeground} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder={t('browse.searchPlaceholder')}
-            placeholderTextColor={Colors.mutedForeground}
-          />
+        {/* ── Search ── */}
+        <View style={styles.searchRow}>
+          <View style={styles.searchBox}>
+            <Search size={16} color={Colors.mutedForeground} />
+            <TextInput
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder={t('browse.searchPlaceholder')}
+              placeholderTextColor={Colors.mutedForeground}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <X size={16} color={Colors.mutedForeground} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
-        {/* Category Pills */}
+        {/* ── Category Chips ── */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categories}
+          contentContainerStyle={styles.chipsRow}
         >
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category.id}
-              onPress={() => setSelectedCategory(category.id)}
-              style={[
-                styles.categoryPill,
-                {
-                  backgroundColor:
-                    selectedCategory === category.id ? Colors.primary : Colors.accent,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.categoryText,
-                  {
-                    color:
-                      selectedCategory === category.id
-                        ? Colors.primaryForeground
-                        : Colors.foreground,
-                  },
-                ]}
+          {categories.map((cat) => {
+            const active = selectedCategory === cat.id;
+            return (
+              <TouchableOpacity
+                key={cat.id}
+                onPress={() => setSelectedCategory(cat.id)}
+                style={[styles.chip, active && styles.chipActive]}
               >
-                {category.name} ({category.count})
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                  {cat.label}
+                </Text>
+                <View style={[styles.chipBadge, active && styles.chipBadgeActive]}>
+                  <Text style={[styles.chipBadgeText, active && styles.chipBadgeTextActive]}>
+                    {cat.count}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
-        {/* Filters Panel */}
+        {/* ── Location Filter ── */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.locRow}
+        >
+          {locations.map((loc) => {
+            const active = selectedLocation === loc.id;
+            return (
+              <TouchableOpacity
+                key={loc.id}
+                onPress={() => setSelectedLocation(loc.id)}
+                style={[styles.locChip, active && styles.locChipActive]}
+              >
+                <MapPin size={12} color={active ? Colors.primary : Colors.mutedForeground} />
+                <Text style={[styles.locText, active && styles.locTextActive]}>
+                  {loc.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* ── Filters Panel ── */}
         {showFilters && (
-          <View style={[styles.card, Shadows.soft]}>
+          <View style={[styles.filterCard, Shadows.soft]}>
             <Text style={styles.filterTitle}>{t('browse.filters')}</Text>
 
             <View style={styles.filterField}>
               <Text style={styles.filterLabel}>{t('browse.region')}</Text>
-              <View style={styles.select}>
-                <Text style={styles.selectText}>
+              <View style={styles.filterSelect}>
+                <Text style={styles.filterSelectText}>
                   {locations.find((l) => l.id === selectedLocation)?.name}
                 </Text>
+                <ChevronDown size={14} color={Colors.mutedForeground} />
               </View>
             </View>
 
@@ -170,7 +204,7 @@ export default function CropBrowser() {
                   placeholderTextColor={Colors.mutedForeground}
                   keyboardType="number-pad"
                 />
-                <Text style={styles.priceSeparator}>{t('browse.priceTo')}</Text>
+                <Text style={styles.priceSep}>—</Text>
                 <TextInput
                   style={styles.priceInput}
                   placeholder={t('browse.maxPrice')}
@@ -180,24 +214,13 @@ export default function CropBrowser() {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.applyButton}>
-              <Text style={styles.applyButtonText}>{t('browse.applyFilters')}</Text>
+            <TouchableOpacity style={styles.applyBtn}>
+              <Text style={styles.applyBtnText}>{t('browse.applyFilters')}</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Results Header */}
-        <View style={styles.resultsHeader}>
-          <Text style={styles.resultsText}>
-            {isLoading ? t('common.loading') : `${filteredCrops.length} ${t('browse.cropsFound')}`}
-          </Text>
-          <View style={styles.nearby}>
-            <MapPin size={14} color={Colors.mutedForeground} />
-            <Text style={styles.nearbyText}>{t('browse.nearYou')}</Text>
-          </View>
-        </View>
-
-        {/* Crops List */}
+        {/* ── Crop Listings ── */}
         {isLoading ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color={Colors.primary} />
@@ -215,12 +238,20 @@ export default function CropBrowser() {
                 onPlayVoice={() => console.log('Play voice:', crop.id)}
               />
             ))}
+            {filteredCrops.length === 0 && (
+              <View style={styles.emptyBox}>
+                <Search size={32} color={Colors.mutedForeground} />
+                <Text style={styles.emptyText}>
+                  {isUrdu ? 'کوئی نتیجہ نہیں' : 'No listings found'}
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
-        {/* Load More / Refresh */}
-        <TouchableOpacity style={styles.loadMore} onPress={loadListings}>
-          <Text style={styles.loadMoreText}>
+        {/* ── Refresh ── */}
+        <TouchableOpacity style={styles.refreshBtn} onPress={loadListings}>
+          <Text style={styles.refreshText}>
             {isLoading ? t('common.loading') : t('browse.refresh')}
           </Text>
         </TouchableOpacity>
@@ -235,156 +266,209 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   scrollContent: {
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
     paddingBottom: 100,
+    gap: Spacing.lg,
   },
+  // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
+    alignItems: 'flex-start',
   },
   title: {
     fontSize: FontSize.xxl,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.foreground,
+  },
+  subtitle: {
+    fontSize: FontSize.sm,
+    color: Colors.mutedForeground,
+    marginTop: 2,
   },
   headerActions: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.sm,
+    paddingTop: 4,
   },
-  iconButton: {
-    padding: Spacing.sm,
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.lg,
-    position: 'relative',
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: Colors.muted,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  filterDot: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.primary,
+  iconBtnActive: {
+    backgroundColor: Colors.primaryBg,
   },
-  searchContainer: {
+  // Search
+  searchRow: {
+    marginTop: -Spacing.xs,
+  },
+  searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.xl,
+    backgroundColor: Colors.muted,
+    borderRadius: Radius.lg,
     paddingHorizontal: Spacing.md,
-    marginBottom: Spacing.md,
+    height: 48,
+    gap: Spacing.sm,
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  searchIcon: {
-    marginRight: Spacing.sm,
-  },
   searchInput: {
     flex: 1,
-    paddingVertical: Spacing.md,
     fontSize: FontSize.md,
     color: Colors.foreground,
   },
-  categories: {
-    gap: Spacing.md,
-    paddingBottom: Spacing.md,
+  // Chips
+  chipsRow: {
+    gap: Spacing.sm,
+    paddingRight: Spacing.lg,
   },
-  categoryPill: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     borderRadius: Radius.full,
+    backgroundColor: Colors.muted,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  categoryText: {
+  chipActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  chipText: {
     fontSize: FontSize.sm,
     fontWeight: '600',
+    color: Colors.foreground,
   },
-  card: {
+  chipTextActive: {
+    color: Colors.white,
+  },
+  chipBadge: {
+    backgroundColor: Colors.border,
+    borderRadius: Radius.full,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  chipBadgeActive: {
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+  chipBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.mutedForeground,
+  },
+  chipBadgeTextActive: {
+    color: Colors.white,
+  },
+  // Location chips
+  locRow: {
+    gap: Spacing.sm,
+    paddingRight: Spacing.lg,
+    marginTop: -Spacing.sm,
+  },
+  locChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  locChipActive: {
+    backgroundColor: Colors.primaryBg,
+    borderColor: Colors.primary,
+  },
+  locText: {
+    fontSize: FontSize.xs,
+    color: Colors.mutedForeground,
+    fontWeight: '500',
+  },
+  locTextActive: {
+    color: Colors.primary,
+    fontWeight: '700',
+  },
+  // Filter Panel
+  filterCard: {
     backgroundColor: Colors.card,
     borderRadius: Radius.xl,
     padding: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.border,
-    marginBottom: Spacing.lg,
+    gap: Spacing.md,
   },
   filterTitle: {
     fontSize: FontSize.md,
     fontWeight: '700',
     color: Colors.foreground,
-    marginBottom: Spacing.md,
   },
   filterField: {
-    marginBottom: Spacing.md,
+    gap: Spacing.xs,
   },
   filterLabel: {
     fontSize: FontSize.sm,
-    fontWeight: '500',
+    fontWeight: '600',
     color: Colors.foreground,
-    marginBottom: Spacing.xs,
   },
-  select: {
+  filterSelect: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.lg,
-    padding: Spacing.md,
-    backgroundColor: Colors.card,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.muted,
   },
-  selectText: {
+  filterSelectText: {
     fontSize: FontSize.md,
     color: Colors.foreground,
   },
   priceRange: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   priceInput: {
     flex: 1,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.lg,
-    padding: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
     fontSize: FontSize.sm,
     color: Colors.foreground,
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.muted,
   },
-  priceSeparator: {
+  priceSep: {
     color: Colors.mutedForeground,
-    fontSize: FontSize.sm,
   },
-  applyButton: {
+  applyBtn: {
     backgroundColor: Colors.primary,
-    paddingVertical: Spacing.md,
     borderRadius: Radius.lg,
+    paddingVertical: 14,
     alignItems: 'center',
   },
-  applyButtonText: {
+  applyBtnText: {
     color: Colors.white,
     fontSize: FontSize.md,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  resultsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  resultsText: {
-    fontSize: FontSize.sm,
-    color: Colors.mutedForeground,
-  },
-  nearby: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  nearbyText: {
-    fontSize: FontSize.sm,
-    color: Colors.mutedForeground,
-  },
+  // Listings
   listings: {
-    gap: Spacing.lg,
+    gap: Spacing.md,
   },
   loadingBox: {
     alignItems: 'center',
@@ -395,17 +479,25 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.mutedForeground,
   },
-  loadMore: {
-    paddingVertical: Spacing.md,
+  emptyBox: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xxxl,
+    gap: Spacing.md,
+  },
+  emptyText: {
+    fontSize: FontSize.md,
+    color: Colors.mutedForeground,
+  },
+  refreshBtn: {
+    paddingVertical: 14,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: Radius.xl,
+    borderRadius: Radius.lg,
     alignItems: 'center',
-    marginTop: Spacing.md,
   },
-  loadMoreText: {
+  refreshText: {
     fontSize: FontSize.md,
-    fontWeight: '500',
+    fontWeight: '600',
     color: Colors.foreground,
   },
 });
