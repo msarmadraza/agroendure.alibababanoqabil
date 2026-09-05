@@ -74,7 +74,7 @@ export default function TradeChatScreen() {
         setMessages(storedMsgs);
       }
 
-      const storedTerms = loadTradeTerms(tradeId);
+      const storedTerms = loadTradeTerms(tradeId, tradeData?.listing);
       if (storedTerms && storedTerms.length > 0) {
         setTerms(storedTerms);
       }
@@ -316,7 +316,7 @@ export default function TradeChatScreen() {
           <View style={styles.topNavCenter}>
             <Text style={styles.topNavTitle}>{t('trade.title')}</Text>
             <Text style={styles.topNavSubtitle}>
-              {trade?.listing?.product_name || (isUrdu ? 'سپر باسمتی چاول' : 'Super Basmati Rice')} • #{tradeId}
+              {trade?.listing?.product_name || trade?.listing?.title || (isUrdu ? 'تجارتی مذاکرات' : 'Trade Negotiation')} • #{tradeId}
             </Text>
           </View>
 

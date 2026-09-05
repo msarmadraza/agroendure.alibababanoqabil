@@ -30,9 +30,13 @@ import { fetchListingById } from '@/services/marketplace/listingService';
 import { Listing } from '@/types/database';
 import { VoiceCircleButton } from '@/components/ui/VoiceCircleButton';
 import { formatUrduNumber, speakUrdu, stopSpeaking } from '@/services/voice/speechService';
+import { useDemoAuth } from '@/services/auth/demoAuthContext';
+import { createOrGetTrade } from '@/services/trade/tradeService';
+import { saveTradeMessage, loadTradeTerms, saveTradeTerms } from '@/services/trade/demoTradeStore';
 
 export default function CropDetails() {
   const router = useRouter();
+  const { activeUser } = useDemoAuth();
   const { t, isUrdu } = useLanguage();
   const { id, imageUri, title: paramTitle, price: paramPrice, quantity: paramQty, location: paramLoc } =
     useLocalSearchParams<{
@@ -110,9 +114,57 @@ export default function CropDetails() {
     }
   };
 
+  const handleStartNegotiation = async (initialOfferPrice?: number) => {
+    const listingId = listing?.id || id || 'crop-listing';
+    const sellerId = listing?.seller_id || listing?.seller?.id || 'demo-seller-uuid';
+    const buyerId = activeUser?.id || 'demo-buyer-uuid';
+
+    // Get or create the trade for this specific crop listing
+    const trade = await createOrGetTrade(listingId, sellerId, buyerId, listing);
+    const tradeId = trade?.id || `trade-${listingId}`;
+
+    // If the user submitted a custom bid amount, post the initial bid message into the trade
+    if (initialOfferPrice && initialOfferPrice > 0) {
+      const bidMsg = {
+        id: `msg-bid-${Date.now()}`,
+        trade_id: tradeId,
+        sender_id: buyerId,
+        message_type: 'text' as const,
+        content: isUrdu
+          ? `السلام علیکم، میری پیشکش: PKR ${initialOfferPrice.toLocaleString()} فی من ہے۔ کیا یہ قابلِ قبول ہے؟`
+          : `Hello, my bid offer is PKR ${initialOfferPrice.toLocaleString()} per unit. Is this acceptable?`,
+        audio_url: null,
+        transcription: null,
+        language: isUrdu ? 'ur' : 'en',
+        created_at: new Date().toISOString(),
+        sender: activeUser || {
+          id: buyerId,
+          full_name: 'خریدار',
+          role: 'buyer',
+          phone: null,
+          avatar_url: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      };
+      saveTradeMessage(tradeId, bidMsg);
+
+      // Update price_per_unit in terms with this bid
+      const currentTerms = loadTradeTerms(tradeId, listing);
+      const updatedTerms = currentTerms.map((t) =>
+        t.field_name === 'price_per_unit'
+          ? { ...t, value: `PKR ${initialOfferPrice.toLocaleString()} فی من`, status: 'proposed' as const }
+          : t
+      );
+      saveTradeTerms(tradeId, updatedTerms);
+    }
+
+    router.push(`/trade/${tradeId}` as any);
+  };
+
   const handleCustomBid = () => {
-    if (customBidAmount && parseInt(customBidAmount) > 0) {
-      router.push('/bidding');
+    if (customBidAmount && parseInt(customBidAmount, 10) > 0) {
+      handleStartNegotiation(parseInt(customBidAmount, 10));
     }
   };
 
@@ -310,7 +362,7 @@ export default function CropDetails() {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.contactBtn, styles.contactBtnPrimary]}
-              onPress={() => router.push('/trade/trade-101')}
+              onPress={() => handleStartNegotiation()}
             >
               <MessageCircle size={16} color={Colors.white} />
               <Text style={styles.contactBtnPrimaryText}>{isUrdu ? 'چیٹ' : 'Chat'}</Text>
@@ -386,7 +438,7 @@ export default function CropDetails() {
       <View style={styles.bottomBar}>
         <TouchableOpacity
           style={styles.bottomCTA}
-          onPress={() => router.push('/trade/trade-101')}
+          onPress={() => handleStartNegotiation()}
           activeOpacity={0.85}
         >
           <MessageCircle size={18} color={Colors.white} />

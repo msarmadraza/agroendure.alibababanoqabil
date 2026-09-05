@@ -88,24 +88,32 @@ export default function FinalAgreementScreen() {
   };
 
   const agrNumber = agreement?.agreement_number || 'AGR-2026-64722';
-  const prodName = agreement?.agreement_data?.productName || terms.find(t => t.field_name === 'product_name')?.value || 'Rice (چاول)';
-  const qty = agreement?.agreement_data?.quantity || terms.find(t => t.field_name === 'quantity')?.value || '100 Mann';
-  const price = agreement?.agreement_data?.price || terms.find(t => t.field_name === 'price_per_unit')?.value || 'PKR 5,700 per Mann';
+  const prodName = agreement?.agreement_data?.productName || terms.find(t => t.field_name === 'product_name')?.value || trade?.listing?.product_name || trade?.listing?.title || 'فصل';
+  const qty = agreement?.agreement_data?.quantity || terms.find(t => t.field_name === 'quantity')?.value || (trade?.listing ? `${trade.listing.quantity} ${trade.listing.quantity_unit}` : '100 Mann');
+  const price = agreement?.agreement_data?.price || terms.find(t => t.field_name === 'price_per_unit')?.value || (trade?.listing ? `PKR ${Number(trade.listing.price).toLocaleString()} فی ${trade.listing.quantity_unit || 'من'}` : 'PKR 5,700 per Mann');
   const loc = agreement?.agreement_data?.deliveryLocation || terms.find(t => t.field_name === 'delivery_location')?.value || 'Lahore';
   const delDate = agreement?.agreement_data?.deliveryDate || terms.find(t => t.field_name === 'delivery_date')?.value || '10 September 2026';
   const payMethod = agreement?.agreement_data?.paymentMethod || terms.find(t => t.field_name === 'payment_method')?.value || 'Bank Transfer';
 
   const { isUrdu } = useLanguage();
 
-  const buyerName = trade?.buyer?.full_name || (isUrdu ? 'طارق ہول سیل خریدار' : 'Tariq Wholesale Buyer');
-  const sellerName = trade?.seller?.full_name || (isUrdu ? 'چوہدری احمد کسان' : 'Chaudhry Ahmad');
+  const parseNum = (str: string) => {
+    const m = String(str).replace(/,/g, '').match(/\d+/);
+    return m ? parseInt(m[0], 10) : 0;
+  };
+  const pNum = parseNum(String(price)) || Number(trade?.listing?.price) || 5700;
+  const qNum = parseNum(String(qty)) || Number(trade?.listing?.quantity) || 100;
+  const totalAmountStr = (pNum * qNum).toLocaleString();
+
+  const buyerName = trade?.buyer?.full_name || (isUrdu ? 'طارق خریدار' : 'Tariq Buyer');
+  const sellerName = trade?.seller?.full_name || (isUrdu ? 'ڈیمو کسان' : 'Farmer');
   const finalSpeechSummary = generateAgreementAudioSummaryUrdu(
     buyerName,
     sellerName,
     prodName,
     qty,
     price,
-    '570,000',
+    totalAmountStr,
     loc,
     delDate,
     payMethod

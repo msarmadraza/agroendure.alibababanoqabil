@@ -1,7 +1,59 @@
-import { ChatMessage, AgreementTerm } from '@/types/database';
+import { ChatMessage, AgreementTerm, Trade, Listing } from '@/types/database';
 
 const STORAGE_KEY_MESSAGES = 'agroendure_demo_messages_';
 const STORAGE_KEY_TERMS = 'agroendure_demo_terms_';
+const STORAGE_KEY_TRADES = 'agroendure_trades_v2';
+
+// In-memory cache
+const memoryTrades: Record<string, Trade> = {};
+const memoryMessages: Record<string, ChatMessage[]> = {};
+const memoryTerms: Record<string, AgreementTerm[]> = {};
+
+export function saveTrade(trade: Trade) {
+  memoryTrades[trade.id] = trade;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const all = loadAllTrades();
+      const updated = [trade, ...all.filter((t) => t.id !== trade.id)];
+      window.localStorage.setItem(STORAGE_KEY_TRADES, JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Failed to save trade:', e);
+    }
+  }
+}
+
+export function loadTrade(tradeId: string): Trade | null {
+  if (memoryTrades[tradeId]) {
+    return memoryTrades[tradeId];
+  }
+  const all = loadAllTrades();
+  const found = all.find((t) => t.id === tradeId);
+  if (found) {
+    memoryTrades[tradeId] = found;
+    return found;
+  }
+  return null;
+}
+
+export function loadAllTrades(): Trade[] {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const raw = window.localStorage.getItem(STORAGE_KEY_TRADES);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((t) => {
+            memoryTrades[t.id] = t;
+          });
+          return parsed;
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+  return Object.values(memoryTrades);
+}
 
 export const INITIAL_DEMO_MESSAGES: ChatMessage[] = [
   {
@@ -108,10 +160,6 @@ export const INITIAL_DEMO_TERMS: AgreementTerm[] = [
   },
 ];
 
-// In-memory cache
-const memoryMessages: Record<string, ChatMessage[]> = {};
-const memoryTerms: Record<string, AgreementTerm[]> = {};
-
 export function loadTradeMessages(tradeId: string): ChatMessage[] {
   if (memoryMessages[tradeId] && memoryMessages[tradeId].length > 0) {
     return memoryMessages[tradeId];
@@ -132,7 +180,7 @@ export function loadTradeMessages(tradeId: string): ChatMessage[] {
     }
   }
 
-  // Initial fallback
+  // Initial fallback: only trade-101 gets pre-filled demo messages
   const defaults = tradeId === 'trade-101' ? [...INITIAL_DEMO_MESSAGES] : [];
   memoryMessages[tradeId] = defaults;
   return defaults;
@@ -154,7 +202,7 @@ export function saveTradeMessage(tradeId: string, message: ChatMessage) {
   }
 }
 
-export function loadTradeTerms(tradeId: string): AgreementTerm[] {
+export function loadTradeTerms(tradeId: string, fallbackListing?: Listing | null): AgreementTerm[] {
   if (memoryTerms[tradeId] && memoryTerms[tradeId].length > 0) {
     return memoryTerms[tradeId];
   }
@@ -174,9 +222,63 @@ export function loadTradeTerms(tradeId: string): AgreementTerm[] {
     }
   }
 
-  const defaults = tradeId === 'trade-101' ? [...INITIAL_DEMO_TERMS] : [];
-  memoryTerms[tradeId] = defaults;
-  return defaults;
+  if (tradeId === 'trade-101') {
+    const defaults = [...INITIAL_DEMO_TERMS];
+    memoryTerms[tradeId] = defaults;
+    return defaults;
+  }
+
+  // If a listing is associated with this trade, initialize default agreed terms from the listing
+  const listing = fallbackListing || loadTrade(tradeId)?.listing;
+  if (listing) {
+    const initialTerms: AgreementTerm[] = [
+      {
+        id: `term-${tradeId}-prod`,
+        trade_id: tradeId,
+        field_name: 'product_name',
+        value: listing.product_name || listing.title || 'فصل',
+        status: 'agreed',
+        confidence: 1.0,
+        evidence_message_ids: [],
+        updated_at: new Date().toISOString(),
+        confirmed_by_buyer: false,
+        confirmed_by_seller: false,
+        version: 1,
+      },
+      {
+        id: `term-${tradeId}-qty`,
+        trade_id: tradeId,
+        field_name: 'quantity',
+        value: `${listing.quantity} ${listing.quantity_unit || 'من'}`,
+        status: 'agreed',
+        confidence: 1.0,
+        evidence_message_ids: [],
+        updated_at: new Date().toISOString(),
+        confirmed_by_buyer: false,
+        confirmed_by_seller: false,
+        version: 1,
+      },
+      {
+        id: `term-${tradeId}-price`,
+        trade_id: tradeId,
+        field_name: 'price_per_unit',
+        value: `PKR ${Number(listing.price || 0).toLocaleString()} فی ${listing.quantity_unit || 'من'}`,
+        status: 'agreed',
+        confidence: 1.0,
+        evidence_message_ids: [],
+        updated_at: new Date().toISOString(),
+        confirmed_by_buyer: false,
+        confirmed_by_seller: false,
+        version: 1,
+      },
+    ];
+    memoryTerms[tradeId] = initialTerms;
+    saveTradeTerms(tradeId, initialTerms);
+    return initialTerms;
+  }
+
+  memoryTerms[tradeId] = [];
+  return [];
 }
 
 export function saveTradeTerms(tradeId: string, terms: AgreementTerm[]) {

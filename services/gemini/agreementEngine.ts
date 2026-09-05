@@ -225,6 +225,49 @@ Analyze conversation and output JSON:
       });
     }
 
+    // 4. Price per unit extraction pattern (Urdu/English/Roman Urdu)
+    const priceKeywords = ['قیمت', 'روپے', 'rupees', 'rs', 'pkr', 'rate', 'ریٹ', 'final', 'فائنل', 'دوں گا', 'پیشکش', 'offer'];
+    const hasPriceContext = priceKeywords.some((kw) => msgText.includes(kw));
+    const priceNumMatch = msgText.match(/(?:(?:pkr|rs|روپے|ریٹ|قیمت)\s*)?([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{2,6})(?:\s*(?:k|ہزار|روپے|فی من|\/من))?/i);
+    if (priceNumMatch && (hasPriceContext || parseInt(priceNumMatch[1].replace(/,/g, ''), 10) >= 500)) {
+      let rawVal = parseInt(priceNumMatch[1].replace(/,/g, ''), 10);
+      if (priceNumMatch[0].includes('k') || priceNumMatch[0].includes('ہزار')) {
+        rawVal = rawVal * 1000;
+      }
+      if (rawVal >= 500 && rawVal <= 10000000) {
+        const formattedPrice = `PKR ${rawVal.toLocaleString()} فی من`;
+        const existingPrice = currentState.find((t) => t.field_name === 'price_per_unit');
+        const isAgreement = msgText.includes('فائنل') || msgText.includes('final') || msgText.includes('done') || msgText.includes('ٹھیک') || msgText.includes('منظور');
+        fallbackUpdates.push({
+          field_name: 'price_per_unit',
+          previous_value: existingPrice ? existingPrice.value : null,
+          new_value: formattedPrice,
+          status: isAgreement ? 'agreed' : 'proposed',
+          confidence: 0.95,
+          evidence_message_ids: [newMessage.id],
+          reason: `Price per unit updated to ${formattedPrice}.`,
+        });
+      }
+    }
+
+    // 5. Quantity extraction pattern
+    const qtyMatch = msgText.match(/([0-9]{1,5})\s*(من|mann|kg|کلو|ٹن|ton|بوری|bags|bales)/i);
+    if (qtyMatch) {
+      const qtyNum = qtyMatch[1];
+      const qtyUnit = qtyMatch[2];
+      const formattedQty = `${qtyNum} ${qtyUnit}`;
+      const existingQty = currentState.find((t) => t.field_name === 'quantity');
+      fallbackUpdates.push({
+        field_name: 'quantity',
+        previous_value: existingQty ? existingQty.value : null,
+        new_value: formattedQty,
+        status: 'agreed',
+        confidence: 0.95,
+        evidence_message_ids: [newMessage.id],
+        reason: `Quantity updated to ${formattedQty}.`,
+      });
+    }
+
     // Combine Gemini result with fallback updates
     if (!result) {
       const knownMissing = ['delivery_location', 'delivery_date', 'payment_method'];

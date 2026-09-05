@@ -13,33 +13,87 @@ import {
   ArrowRight,
 } from 'lucide-react-native';
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
-import { loadTradeMessages, loadTradeTerms } from '@/services/trade/demoTradeStore';
-import { fetchAgreementTerms } from '@/services/trade/tradeService';
-import { AgreementTerm, ChatMessage } from '@/types/database';
+import { loadAllTrades, loadTradeMessages, loadTradeTerms } from '@/services/trade/demoTradeStore';
+import { fetchUserTrades, fetchAgreementTerms } from '@/services/trade/tradeService';
+import { AgreementTerm, ChatMessage, Trade } from '@/types/database';
+import { useDemoAuth } from '@/services/auth/demoAuthContext';
 import { useLanguage } from '@/services/i18n/languageContext';
 import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
 
 export default function Messages() {
   const router = useRouter();
   const { t, isUrdu } = useLanguage();
+  const { activeUser, activeRole } = useDemoAuth();
   const [filter, setFilter] = useState<'all' | 'negotiating' | 'confirmed'>('all');
-  const [terms101, setTerms101] = useState<AgreementTerm[]>(() => loadTradeTerms('trade-101'));
-  const [messages101, setMessages101] = useState<ChatMessage[]>(() => loadTradeMessages('trade-101'));
+  const [trades, setTrades] = useState<Trade[]>(() => {
+    const all = loadAllTrades();
+    return all.length > 0
+      ? all
+      : [
+          {
+            id: 'trade-101',
+            listing_id: 'listing-101',
+            buyer_id: 'buyer-001',
+            seller_id: 'seller-101',
+            status: 'negotiating',
+            buyer_confirmed: false,
+            seller_confirmed: false,
+            buyer_confirmed_at: null,
+            seller_confirmed_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            listing: {
+              id: 'listing-101',
+              seller_id: 'seller-101',
+              title: 'سپر باسمتی چاول',
+              product_name: 'سپر باسمتی چاول',
+              price: 5700,
+              quantity: 100,
+              quantity_unit: 'Mann',
+              currency: 'PKR',
+              location: 'Lahore, Punjab',
+              image_url: null,
+              status: 'active',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            seller: {
+              id: 'seller-101',
+              full_name: 'چوہدری احمد',
+              role: 'seller',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            buyer: {
+              id: 'buyer-001',
+              full_name: 'طارق خریدار',
+              role: 'buyer',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          } as unknown as Trade,
+        ];
+  });
 
   useEffect(() => {
-    async function loadTerms() {
-      const dbTerms = await fetchAgreementTerms('trade-101');
-      if (dbTerms && dbTerms.length > 0) {
-        setTerms101(dbTerms);
+    async function loadTrades() {
+      const userTrades = await fetchUserTrades(activeUser?.id || '');
+      if (userTrades && userTrades.length > 0) {
+        setTrades(userTrades);
       }
     }
-    loadTerms();
-  }, []);
+    loadTrades();
+  }, [activeUser?.id]);
 
-  const agreedCount = terms101.filter((term) => term.status === 'agreed').length;
-  const progressPercent = Math.round((agreedCount / 6) * 100);
-  const isReadyForReview = progressPercent >= 80;
-  const lastMsg101 = messages101[messages101.length - 1];
+  const negotiatingTrades = trades.filter((t) => t.status !== 'confirmed');
+  const confirmedTrades = trades.filter((t) => t.status === 'confirmed');
+
+  const filteredTrades =
+    filter === 'negotiating'
+      ? negotiatingTrades
+      : filter === 'confirmed'
+      ? confirmedTrades
+      : trades;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -83,7 +137,7 @@ export default function Messages() {
             activeOpacity={0.7}
           >
             <Text style={[styles.segmentTabText, filter === 'all' && styles.segmentTabTextActive]}>
-              {t('messages.tabAll')} (3)
+              {t('messages.tabAll')} ({trades.length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -92,7 +146,7 @@ export default function Messages() {
             activeOpacity={0.7}
           >
             <Text style={[styles.segmentTabText, filter === 'negotiating' && styles.segmentTabTextActive]}>
-              {t('messages.tabNegotiating')} (2)
+              {t('messages.tabNegotiating')} ({negotiatingTrades.length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -101,222 +155,181 @@ export default function Messages() {
             activeOpacity={0.7}
           >
             <Text style={[styles.segmentTabText, filter === 'confirmed' && styles.segmentTabTextActive]}>
-              {t('messages.tabConfirmed')} (1)
+              {t('messages.tabConfirmed')} ({confirmedTrades.length})
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Conversations List */}
         <View style={styles.list}>
-          {/* TRADE 101 - Primary Active Negotiation */}
-          {(filter === 'all' || filter === 'negotiating') && (
-            <View style={[styles.tradeCard, Shadows.soft]}>
-              {/* Partner & Commodity Info */}
-              <TouchableOpacity
-                style={styles.cardHeader}
-                onPress={() => router.push('/trade/trade-101')}
-                activeOpacity={0.8}
-              >
-                <View style={styles.avatarSeller}>
-                  <Text style={styles.avatarText}>CA</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.nameRow}>
-                    <Text style={styles.partnerName}>
-                      {isUrdu ? 'چوہدری احمد' : 'Chaudhry Ahmad'}
-                    </Text>
-                    <View style={styles.verifiedBadge}>
+          {filteredTrades.map((trade) => {
+            const partner = activeRole === 'seller' ? trade.buyer : trade.seller;
+            const partnerName =
+              partner?.full_name ||
+              (activeRole === 'seller'
+                ? isUrdu
+                  ? 'خریدار'
+                  : 'Buyer'
+                : isUrdu
+                ? 'کسان'
+                : 'Farmer');
+            const cropTitle = trade.listing?.product_name || trade.listing?.title || (isUrdu ? 'فصل' : 'Crop');
+            const cropQty = trade.listing ? `${trade.listing.quantity} ${trade.listing.quantity_unit || 'من'}` : '';
+            const cropPrice = trade.listing ? `₨${Number(trade.listing.price).toLocaleString()}/من` : '';
+            const tradeMsgs = loadTradeMessages(trade.id);
+            const lastMsg = tradeMsgs[tradeMsgs.length - 1];
+            const tradeTerms = loadTradeTerms(trade.id, trade.listing);
+            const agreedCount = tradeTerms.filter((t) => t.status === 'agreed').length;
+            const progressPercent = Math.round((agreedCount / 6) * 100);
+            const isReady = progressPercent >= 80;
+            const isConfirmed = trade.status === 'confirmed';
+
+            if (isConfirmed) {
+              const pNum = Number(trade.listing?.price) || 5700;
+              const qNum = Number(trade.listing?.quantity) || 100;
+              const totalVal = (pNum * qNum).toLocaleString();
+
+              return (
+                <View key={trade.id} style={[styles.tradeCard, styles.confirmedCard, Shadows.soft]}>
+                  <View style={styles.confirmedHeaderRow}>
+                    <View style={styles.contractIdGroup}>
+                      <FileCheck size={16} color="#059669" />
+                      <Text style={styles.contractIdText}>
+                        {isUrdu ? `معاہدہ #${trade.id}` : `Contract #${trade.id}`}
+                      </Text>
+                    </View>
+                    <View style={styles.executedBadge}>
                       <ShieldCheck size={11} color="#065F46" />
-                      <Text style={styles.verifiedText}>{t('messages.verifiedFarmer')}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.commodityRow}>
-                    <Text style={styles.tradeTitle}>
-                      {isUrdu ? 'سپر باسمتی چاول • 100 من' : 'Super Basmati Rice • 100 Mann'}
-                    </Text>
-                    <Text style={styles.priceTag}>
-                      {isUrdu ? '₨5,700/من' : '₨5,700/Mann'}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-
-              {/* Latest Message Preview */}
-              <TouchableOpacity
-                style={styles.latestMsgBox}
-                onPress={() => router.push('/trade/trade-101')}
-                activeOpacity={0.8}
-              >
-                <View style={styles.msgLeftIcon}>
-                  <MessageCircle size={14} color="#059669" />
-                </View>
-                <Text style={styles.latestMsgText} numberOfLines={1}>
-                  {lastMsg101?.content || lastMsg101?.transcription || (isUrdu ? 'ٹھیک ہے، 5700 فائنل۔' : 'Agreed, 5,700 final.')}
-                </Text>
-                <View style={styles.timeRow}>
-                  <Clock size={11} color="#94A3B8" />
-                  <Text style={styles.timeText}>{isUrdu ? '2 منٹ پہلے' : '2m ago'}</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* Slender Agreement Progress Tracker */}
-              <View style={styles.progressStrip}>
-                <View style={styles.progressHeaderRow}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <CheckCircle2 size={13} color="#059669" />
-                    <Text style={styles.progressLabel}>
-                      {isUrdu
-                        ? `6 میں سے ${agreedCount} شرائط طے شدہ (${progressPercent}%)`
-                        : `${agreedCount} of 6 terms agreed (${progressPercent}%)`}
-                    </Text>
-                  </View>
-                  {isReadyForReview && (
-                    <View style={styles.readyBadge}>
-                      <Text style={styles.readyBadgeText}>{t('messages.readyToFinalize')}</Text>
-                    </View>
-                  )}
-                </View>
-                <View style={styles.progressBarTrack}>
-                  <View style={[styles.progressBarFill, { width: `${Math.min(100, progressPercent)}%` }]} />
-                </View>
-              </View>
-
-              {/* Contextual Action Buttons */}
-              <View style={styles.actionButtonsRow}>
-                <TouchableOpacity
-                  style={styles.chatPrimaryBtn}
-                  onPress={() => router.push('/trade/trade-101')}
-                  activeOpacity={0.85}
-                >
-                  <MessageCircle size={15} color="#FFFFFF" />
-                  <Text style={styles.chatPrimaryText}>
-                    {t('messages.continueChat')}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.reviewSecondaryBtn}
-                  onPress={() => router.push('/agreement/trade-101')}
-                  activeOpacity={0.85}
-                >
-                  <FileText size={14} color="#065F46" />
-                  <Text style={styles.reviewSecondaryText}>
-                    {t('messages.reviewAgreement')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          {/* TRADE 102 - Ahmad Ali Wheat Bid */}
-          {(filter === 'all' || filter === 'negotiating') && (
-            <View style={[styles.tradeCard, Shadows.soft]}>
-              <TouchableOpacity
-                style={styles.cardHeader}
-                onPress={() => router.push('/trade/trade-101')}
-                activeOpacity={0.8}
-              >
-                <View style={styles.avatarBuyer}>
-                  <Text style={styles.avatarTextBuyer}>AA</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.nameRow}>
-                    <Text style={styles.partnerName}>
-                      {isUrdu ? 'احمد علی' : 'Ahmad Ali'}
-                    </Text>
-                    <View style={styles.newOfferBadge}>
-                      <Text style={styles.newOfferBadgeText}>
-                        {t('messages.newOfferTag')}
+                      <Text style={styles.executedBadgeText}>
+                        {t('messages.contractExecuted')}
                       </Text>
                     </View>
                   </View>
-                  <View style={styles.commodityRow}>
-                    <Text style={styles.tradeTitle}>
-                      {isUrdu ? 'اعلیٰ کوالٹی گندم • 50 من' : 'High Quality Wheat • 50 Mann'}
+
+                  <View style={styles.confirmedDetailsBody}>
+                    <Text style={styles.confirmedParties}>
+                      {trade.buyer?.full_name || 'Buyer'} ⇄ {trade.seller?.full_name || 'Farmer'}
+                    </Text>
+                    <Text style={styles.confirmedSpecs}>
+                      {`${cropQty} ${cropTitle} • ${isUrdu ? 'کل مالیت:' : 'Total Value:'} ₨${totalVal} • ${isUrdu ? 'بائیو میٹرک تصدیق شدہ' : 'Biometric Verified'}`}
                     </Text>
                   </View>
-                </View>
-              </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.latestMsgBox}
-                onPress={() => router.push('/trade/trade-101')}
-                activeOpacity={0.8}
-              >
-                <View style={styles.msgLeftIcon}>
-                  <MessageCircle size={14} color="#0284C7" />
+                  <View style={styles.actionButtonsRow}>
+                    <TouchableOpacity
+                      style={styles.finalDocBtn}
+                      onPress={() => router.push(`/agreement/final/${trade.id}` as any)}
+                      activeOpacity={0.85}
+                    >
+                      <FileText size={15} color="#FFFFFF" />
+                      <Text style={styles.finalDocText}>
+                        {isUrdu
+                          ? 'حتمی قانونی معاہدہ دستاویز دیکھیں →'
+                          : 'View Final Confirmed Agreement Document →'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                <Text style={styles.latestMsgText} numberOfLines={1}>
-                  {isUrdu
-                    ? 'سلام، آپ کی گندم کی قیمت میں کمی ممکن ہے؟'
-                    : 'Hello, can you offer a discount on the wheat price?'}
-                </Text>
-                <View style={styles.timeRow}>
-                  <Clock size={11} color="#94A3B8" />
-                  <Text style={styles.timeText}>{isUrdu ? '5 منٹ پہلے' : '5m ago'}</Text>
-                </View>
-              </TouchableOpacity>
+              );
+            }
 
-              <View style={styles.actionButtonsRow}>
+            // Negotiating Trade Card
+            return (
+              <View key={trade.id} style={[styles.tradeCard, Shadows.soft]}>
                 <TouchableOpacity
-                  style={styles.replyPrimaryBtn}
-                  onPress={() => router.push('/trade/trade-101')}
-                  activeOpacity={0.85}
+                  style={styles.cardHeader}
+                  onPress={() => router.push(`/trade/${trade.id}` as any)}
+                  activeOpacity={0.8}
                 >
-                  <MessageCircle size={15} color="#FFFFFF" />
-                  <Text style={styles.chatPrimaryText}>
-                    {t('messages.replyToOffer')}
-                  </Text>
+                  <View style={activeRole === 'seller' ? styles.avatarBuyer : styles.avatarSeller}>
+                    <Text style={activeRole === 'seller' ? styles.avatarTextBuyer : styles.avatarText}>
+                      {partnerName.slice(0, 2).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.nameRow}>
+                      <Text style={styles.partnerName}>{partnerName}</Text>
+                      <View style={styles.verifiedBadge}>
+                        <ShieldCheck size={11} color="#065F46" />
+                        <Text style={styles.verifiedText}>{t('messages.verifiedFarmer')}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.commodityRow}>
+                      <Text style={styles.tradeTitle}>
+                        {cropTitle} {cropQty ? `• ${cropQty}` : ''}
+                      </Text>
+                      {cropPrice ? <Text style={styles.priceTag}>{cropPrice}</Text> : null}
+                    </View>
+                  </View>
                 </TouchableOpacity>
-              </View>
-            </View>
-          )}
 
-          {/* CONFIRMED CONTRACT SECTION */}
-          {(filter === 'all' || filter === 'confirmed') && (
-            <View style={[styles.tradeCard, styles.confirmedCard, Shadows.soft]}>
-              <View style={styles.confirmedHeaderRow}>
-                <View style={styles.contractIdGroup}>
-                  <FileCheck size={16} color="#059669" />
-                  <Text style={styles.contractIdText}>
-                    {isUrdu ? 'معاہدہ #AGR-2026-64722' : 'Contract #AGR-2026-64722'}
-                  </Text>
-                </View>
-                <View style={styles.executedBadge}>
-                  <ShieldCheck size={11} color="#065F46" />
-                  <Text style={styles.executedBadgeText}>
-                    {t('messages.contractExecuted')}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.confirmedDetailsBody}>
-                <Text style={styles.confirmedParties}>
-                  {isUrdu ? 'طارق ہول سیل خریدار ⇄ چوہدری احمد' : 'Tariq Wholesale Buyer ⇄ Chaudhry Ahmad'}
-                </Text>
-                <Text style={styles.confirmedSpecs}>
-                  {isUrdu
-                    ? '100 من سپر باسمتی چاول • کل مالیت: ₨570,000 • بائیو میٹرک تصدیق شدہ'
-                    : '100 Mann Super Basmati Rice • Total Value: PKR 570,000 • Biometric Verified'}
-                </Text>
-              </View>
-
-              <View style={styles.actionButtonsRow}>
+                {/* Latest Message Preview */}
                 <TouchableOpacity
-                  style={styles.finalDocBtn}
-                  onPress={() => router.push('/agreement/final/trade-101' as any)}
-                  activeOpacity={0.85}
+                  style={styles.latestMsgBox}
+                  onPress={() => router.push(`/trade/${trade.id}` as any)}
+                  activeOpacity={0.8}
                 >
-                  <FileText size={15} color="#FFFFFF" />
-                  <Text style={styles.finalDocText}>
-                    {isUrdu
-                      ? 'حتمی قانونی معاہدہ دستاویز دیکھیں →'
-                      : 'View Final Confirmed Agreement Document →'}
+                  <View style={styles.msgLeftIcon}>
+                    <MessageCircle size={14} color="#059669" />
+                  </View>
+                  <Text style={styles.latestMsgText} numberOfLines={1}>
+                    {lastMsg?.content || lastMsg?.transcription || (isUrdu ? 'بات چیت جاری ہے...' : 'Negotiation in progress...')}
                   </Text>
+                  <View style={styles.timeRow}>
+                    <Clock size={11} color="#94A3B8" />
+                    <Text style={styles.timeText}>{isUrdu ? 'ابھی' : 'Active'}</Text>
+                  </View>
                 </TouchableOpacity>
+
+                {/* Progress Strip */}
+                <View style={styles.progressStrip}>
+                  <View style={styles.progressHeaderRow}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <CheckCircle2 size={13} color="#059669" />
+                      <Text style={styles.progressLabel}>
+                        {isUrdu
+                          ? `6 میں سے ${agreedCount} شرائط طے شدہ (${progressPercent}%)`
+                          : `${agreedCount} of 6 terms agreed (${progressPercent}%)`}
+                      </Text>
+                    </View>
+                    {isReady && (
+                      <View style={styles.readyBadge}>
+                        <Text style={styles.readyBadgeText}>{t('messages.readyToFinalize')}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.progressBarTrack}>
+                    <View style={[styles.progressBarFill, { width: `${Math.min(100, progressPercent)}%` }]} />
+                  </View>
+                </View>
+
+                {/* Action Buttons */}
+                <View style={styles.actionButtonsRow}>
+                  <TouchableOpacity
+                    style={styles.chatPrimaryBtn}
+                    onPress={() => router.push(`/trade/${trade.id}` as any)}
+                    activeOpacity={0.85}
+                  >
+                    <MessageCircle size={15} color="#FFFFFF" />
+                    <Text style={styles.chatPrimaryText}>
+                      {t('messages.continueChat')}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.reviewSecondaryBtn}
+                    onPress={() => router.push(`/agreement/${trade.id}` as any)}
+                    activeOpacity={0.85}
+                  >
+                    <FileText size={14} color="#065F46" />
+                    <Text style={styles.reviewSecondaryText}>
+                      {t('messages.reviewAgreement')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          )}
+            );
+          })}
         </View>
       </ScrollView>
     </SafeAreaView>

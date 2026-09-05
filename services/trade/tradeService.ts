@@ -1,74 +1,120 @@
 import { supabase } from '@/services/supabase/client';
-import { AgreementTerm, ChatMessage, Trade } from '@/types/database';
+import { AgreementTerm, ChatMessage, Trade, Listing } from '@/types/database';
 import {
+  loadTrade,
+  saveTrade,
+  loadAllTrades,
+  loadTradeTerms,
   loadTradeConfirmation,
   saveTradeConfirmation,
 } from './demoTradeStore';
 import { crossTabSync } from './crossTabSync';
+import { fetchListingById } from '@/services/marketplace/listingService';
 
 export async function createOrGetTrade(
   listingId: string,
   sellerId: string,
-  buyerId: string
+  buyerId: string,
+  listingData?: Listing | null
 ): Promise<Trade | null> {
-  const { data: existingTrades } = await supabase
-    .from('trades')
-    .select('*, listing:listings(*), buyer:profiles!buyer_id(*), seller:profiles!seller_id(*)')
-    .eq('listing_id', listingId)
-    .eq('buyer_id', buyerId)
-    .eq('seller_id', sellerId);
+  const tradeId = `trade-${listingId}`;
 
-  if (existingTrades && existingTrades.length > 0) {
-    return existingTrades[0];
+  // 1. Check existing local trade
+  const existingLocal = loadTrade(tradeId);
+  if (existingLocal) {
+    return existingLocal;
   }
 
-  const { data: newTrade, error } = await supabase
-    .from('trades')
-    .insert({
-      listing_id: listingId,
-      buyer_id: buyerId,
+  // 2. Check Supabase
+  try {
+    const { data: existingTrades } = await supabase
+      .from('trades')
+      .select('*, listing:listings(*), buyer:profiles!buyer_id(*), seller:profiles!seller_id(*)')
+      .eq('listing_id', listingId)
+      .eq('buyer_id', buyerId)
+      .eq('seller_id', sellerId);
+
+    if (existingTrades && existingTrades.length > 0) {
+      saveTrade(existingTrades[0]);
+      return existingTrades[0];
+    }
+
+    const { data: newTrade, error } = await supabase
+      .from('trades')
+      .insert({
+        listing_id: listingId,
+        buyer_id: buyerId,
+        seller_id: sellerId,
+        status: 'negotiating',
+      })
+      .select('*, listing:listings(*), buyer:profiles!buyer_id(*), seller:profiles!seller_id(*)')
+      .single();
+
+    if (!error && newTrade) {
+      saveTrade(newTrade);
+      return newTrade;
+    }
+  } catch (dbErr) {
+    console.warn('DB trade query skipped, building demo trade:', dbErr);
+  }
+
+  // 3. Fallback/Local trade creation
+  const listing = listingData || (await fetchListingById(listingId));
+  const newTrade: Trade = {
+    id: tradeId,
+    listing_id: listingId,
+    buyer_id: buyerId,
+    seller_id: sellerId,
+    status: 'negotiating',
+    buyer_confirmed: false,
+    seller_confirmed: false,
+    buyer_confirmed_at: null,
+    seller_confirmed_at: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    listing: listing || ({
+      id: listingId,
       seller_id: sellerId,
-      status: 'negotiating',
-    })
-    .select('*, listing:listings(*), buyer:profiles!buyer_id(*), seller:profiles!seller_id(*)')
-    .single();
+      title: 'فصل',
+      description: 'فصل',
+      product_name: 'فصل',
+      price: 10000,
+      quantity: 100,
+      quantity_unit: 'Mann',
+      currency: 'PKR',
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as unknown as Listing),
+    buyer: {
+      id: buyerId,
+      full_name: 'طارق خریدار',
+      phone: '+92 300 1112233',
+      role: 'buyer',
+      avatar_url: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    seller: listing?.seller || {
+      id: sellerId,
+      full_name: 'ڈیمو کسان',
+      phone: '+92 300 5551234',
+      role: 'seller',
+      avatar_url: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+  };
 
-  if (error) {
-    console.error('Error creating trade:', error);
-    throw error;
-  }
-
-  if (newTrade && newTrade.listing) {
-    await supabase.from('agreement_terms').insert([
-      {
-        trade_id: newTrade.id,
-        field_name: 'product_name',
-        value: newTrade.listing.product_name,
-        status: 'proposed',
-        confidence: 1.0,
-      },
-      {
-        trade_id: newTrade.id,
-        field_name: 'quantity',
-        value: newTrade.listing.quantity,
-        status: 'proposed',
-        confidence: 1.0,
-      },
-      {
-        trade_id: newTrade.id,
-        field_name: 'price_per_unit',
-        value: newTrade.listing.price,
-        status: 'proposed',
-        confidence: 1.0,
-      },
-    ]);
-  }
-
+  saveTrade(newTrade);
+  loadTradeTerms(tradeId, newTrade.listing);
   return newTrade;
 }
 
 export async function fetchTradeById(tradeId: string): Promise<Trade | null> {
   const localConf = loadTradeConfirmation(tradeId);
+
+  // 1. Try Supabase
   try {
     const { data, error } = await supabase
       .from('trades')
@@ -88,13 +134,68 @@ export async function fetchTradeById(tradeId: string): Promise<Trade | null> {
       if (data.buyer_confirmed && data.seller_confirmed) {
         data.status = 'confirmed';
       }
+      saveTrade(data);
       return data;
     }
   } catch (err) {
-    console.warn('Supabase fetchTradeById error, fallback used:', err);
+    console.warn('Supabase fetchTradeById error, checking local store:', err);
   }
 
-  // Fallback trade record for offline or demo trade
+  // 2. Check Local Store
+  const localTrade = loadTrade(tradeId);
+  if (localTrade) {
+    if (localConf.buyerConfirmed) localTrade.buyer_confirmed = true;
+    if (localConf.sellerConfirmed) localTrade.seller_confirmed = true;
+    if (localTrade.buyer_confirmed && localTrade.seller_confirmed) {
+      localTrade.status = 'confirmed';
+    }
+    return localTrade;
+  }
+
+  // 3. If tradeId has format trade-<listingId>, resolve listing dynamically
+  if (tradeId.startsWith('trade-')) {
+    const listingId = tradeId.replace(/^trade-/, '');
+    const listing = await fetchListingById(listingId);
+    if (listing) {
+      const generatedTrade: Trade = {
+        id: tradeId,
+        listing_id: listing.id,
+        buyer_id: 'buyer-001',
+        seller_id: listing.seller_id,
+        status: localConf.buyerConfirmed && localConf.sellerConfirmed ? 'confirmed' : 'negotiating',
+        buyer_confirmed: localConf.buyerConfirmed,
+        seller_confirmed: localConf.sellerConfirmed,
+        buyer_confirmed_at: localConf.buyerConfirmedAt,
+        seller_confirmed_at: localConf.sellerConfirmedAt,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        listing,
+        buyer: {
+          id: 'buyer-001',
+          full_name: 'طارق خریدار',
+          phone: '+92 300 1112233',
+          role: 'buyer',
+          avatar_url: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        seller: listing.seller || {
+          id: listing.seller_id,
+          full_name: 'ڈیمو کسان',
+          phone: '+92 300 5551234',
+          role: 'seller',
+          avatar_url: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      };
+      saveTrade(generatedTrade);
+      loadTradeTerms(tradeId, listing);
+      return generatedTrade;
+    }
+  }
+
+  // 4. Fallback trade record for offline or demo trade-101
   return {
     id: tradeId,
     listing_id: 'listing-101',
@@ -145,17 +246,27 @@ export async function fetchTradeById(tradeId: string): Promise<Trade | null> {
 }
 
 export async function fetchUserTrades(userId: string): Promise<Trade[]> {
-  const { data, error } = await supabase
-    .from('trades')
-    .select('*, listing:listings(*), buyer:profiles!buyer_id(*), seller:profiles!seller_id(*)')
-    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-    .order('updated_at', { ascending: false });
+  const localTrades = loadAllTrades();
+  let dbTrades: Trade[] = [];
 
-  if (error) {
-    console.error('Error fetching user trades:', error);
-    return [];
+  try {
+    const { data, error } = await supabase
+      .from('trades')
+      .select('*, listing:listings(*), buyer:profiles!buyer_id(*), seller:profiles!seller_id(*)')
+      .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+      .order('updated_at', { ascending: false });
+
+    if (!error && data) {
+      dbTrades = data;
+    }
+  } catch (err) {
+    console.warn('DB fetchUserTrades skipped:', err);
   }
-  return data || [];
+
+  const map = new Map<string, Trade>();
+  localTrades.forEach((t) => map.set(t.id, t));
+  dbTrades.forEach((t) => map.set(t.id, t));
+  return Array.from(map.values());
 }
 
 export async function fetchTradeMessages(tradeId: string): Promise<ChatMessage[]> {

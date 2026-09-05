@@ -233,9 +233,9 @@ export default function AgreementReviewScreen() {
     return t ? String(t.value) : fallback;
   };
 
-  const productName = findVal('product_name', trade?.listing?.product_name || (isUrdu ? 'سپر باسمتی چاول' : 'Super Basmati Rice'));
-  const quantity = findVal('quantity', isUrdu ? '100 من' : '100 Mann');
-  const pricePerUnit = findVal('price_per_unit', isUrdu ? 'PKR 5,700 فی من' : 'PKR 5,700 per Mann');
+  const productName = findVal('product_name', trade?.listing?.product_name || trade?.listing?.title || (isUrdu ? 'فصل' : 'Crop'));
+  const quantity = findVal('quantity', trade?.listing ? `${trade.listing.quantity} ${trade.listing.quantity_unit}` : (isUrdu ? '100 من' : '100 Mann'));
+  const pricePerUnit = findVal('price_per_unit', trade?.listing ? `PKR ${Number(trade.listing.price).toLocaleString()} فی ${trade.listing.quantity_unit || 'من'}` : (isUrdu ? 'PKR 5,700 فی من' : 'PKR 5,700 per Mann'));
   const deliveryLocation = findVal('delivery_location', isUrdu ? 'لاہور' : 'Lahore');
   const deliveryDate = findVal('delivery_date', isUrdu ? '10 ستمبر 2026' : '10 September 2026');
   const paymentMethod = findVal('payment_method', isUrdu ? 'بینک ٹرانسفر / JazzCash' : 'Bank Transfer / JazzCash');
@@ -245,12 +245,12 @@ export default function AgreementReviewScreen() {
     const m = str.replace(/,/g, '').match(/\d+/);
     return m ? parseInt(m[0], 10) : 0;
   };
-  const pNum = parseNum(pricePerUnit) || 5700;
-  const qNum = parseNum(quantity) || 100;
+  const pNum = parseNum(pricePerUnit) || Number(trade?.listing?.price) || 5700;
+  const qNum = parseNum(quantity) || Number(trade?.listing?.quantity) || 100;
   const totalAmount = (pNum * qNum).toLocaleString();
 
-  const buyerName = trade?.buyer?.full_name || (isUrdu ? 'طارق ہول سیل خریدار' : 'Tariq Wholesale Buyer');
-  const sellerName = trade?.seller?.full_name || (isUrdu ? 'چوہدری احمد کسان' : 'Chaudhry Ahmad');
+  const buyerName = trade?.buyer?.full_name || (isUrdu ? 'طارق خریدار' : 'Tariq Buyer');
+  const sellerName = trade?.seller?.full_name || (isUrdu ? 'ڈیمو کسان' : 'Farmer');
   const agreementAudioUrdu = generateAgreementAudioSummaryUrdu(
     buyerName,
     sellerName,

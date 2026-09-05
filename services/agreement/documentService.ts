@@ -19,13 +19,21 @@ export function generateAgreementHTML(
     return t ? String(t.value) : fallback;
   };
 
-  const productName = findVal('product_name', trade?.listing?.product_name || 'Agricultural Produce');
-  const quantity = findVal('quantity', String(trade?.listing?.quantity || '100 Mann'));
-  const pricePerUnit = findVal('price_per_unit', `PKR ${trade?.listing?.price || 5700} per Mann`);
+  const productName = findVal('product_name', trade?.listing?.product_name || trade?.listing?.title || 'Agricultural Produce');
+  const quantity = findVal('quantity', trade?.listing ? `${trade.listing.quantity} ${trade.listing.quantity_unit}` : '100 Mann');
+  const pricePerUnit = findVal('price_per_unit', trade?.listing ? `PKR ${Number(trade.listing.price).toLocaleString()} per ${trade.listing.quantity_unit || 'Mann'}` : 'PKR 5,700 per Mann');
   const deliveryLocation = findVal('delivery_location', 'Lahore');
   const deliveryDate = findVal('delivery_date', '10 September 2026');
   const paymentMethod = findVal('payment_method', 'Bank Transfer');
   const specialConditions = findVal('special_conditions', 'Quality inspection upon delivery. Standard agricultural cancellation terms apply.');
+
+  const parseNum = (str: string) => {
+    const m = String(str).replace(/,/g, '').match(/\d+/);
+    return m ? parseInt(m[0], 10) : 0;
+  };
+  const pNum = parseNum(pricePerUnit) || Number(trade?.listing?.price) || 5700;
+  const qNum = parseNum(quantity) || Number(trade?.listing?.quantity) || 100;
+  const totalTransactionValue = (pNum * qNum).toLocaleString();
 
   return `
 <!DOCTYPE html>
@@ -103,7 +111,7 @@ export function generateAgreementHTML(
         </div>
         <div>
           <div class="label">Total Transaction Value</div>
-          <div class="value">PKR 570,000</div>
+          <div class="value">PKR ${totalTransactionValue}</div>
         </div>
       </div>
     </div>
