@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -13,11 +13,16 @@ import {
   Plus,
   CheckCircle2,
   AlertCircle,
+  Package,
+  ChevronRight,
+  MessageCircle,
 } from 'lucide-react-native';
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
 import { useDemoAuth } from '@/services/auth/demoAuthContext';
 import { useLanguage } from '@/services/i18n/languageContext';
 import { fetchUserVerification } from '@/services/verification/identityService';
+import { fetchListings } from '@/services/marketplace/listingService';
+import { Listing } from '@/types/database';
 import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
 
 export default function Profile() {
@@ -26,15 +31,35 @@ export default function Profile() {
   const { language, setLanguage, t, isUrdu } = useLanguage();
 
   const [isVerified, setIsVerified] = useState(false);
+  const [userListings, setUserListings] = useState<Listing[]>([]);
+  const [loadingListings, setLoadingListings] = useState(false);
 
   useEffect(() => {
     async function checkVerification() {
       if (activeUser?.id) {
         const rec = await fetchUserVerification(activeUser.id);
-        setIsVerified(Boolean(rec && rec.verification_status === 'verified'));
+        setIsVerified(Boolean(rec && rec.verification_status === 'verified') || Boolean(activeUser.identity_verified));
       }
     }
     checkVerification();
+  }, [activeUser?.id, activeUser?.identity_verified]);
+
+  useEffect(() => {
+    async function loadUserListings() {
+      if (activeUser?.id) {
+        setLoadingListings(true);
+        try {
+          const all = await fetchListings();
+          const mine = all.filter((l) => l.seller_id === activeUser.id);
+          setUserListings(mine);
+        } catch {
+          setUserListings([]);
+        } finally {
+          setLoadingListings(false);
+        }
+      }
+    }
+    loadUserListings();
   }, [activeUser?.id]);
 
   const bids = [
@@ -48,7 +73,6 @@ export default function Profile() {
     },
   ];
 
-  const userListings: any[] = [];
   const isSeller = activeRole === 'seller';
 
   // Build 2-letter monogram
@@ -74,7 +98,11 @@ export default function Profile() {
             {/* Avatar */}
             <View style={styles.avatarWrap}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{monogram}</Text>
+                {activeUser?.avatar_url ? (
+                  <Image source={{ uri: activeUser.avatar_url }} style={styles.avatarImage} />
+                ) : (
+                  <Text style={styles.avatarText}>{monogram}</Text>
+                )}
               </View>
               {isVerified && (
                 <View style={styles.verifiedBadge}>
@@ -84,6 +112,12 @@ export default function Profile() {
             </View>
 
             <Text style={styles.name}>{fullName}</Text>
+            {activeUser?.full_name_ur ? (
+              <Text style={styles.nameUrdu}>{activeUser.full_name_ur}</Text>
+            ) : null}
+            {activeUser?.cnic_number ? (
+              <Text style={styles.cnicText}>CNIC: {activeUser.cnic_number}</Text>
+            ) : null}
             <View style={styles.locationRow}>
               <View style={[styles.rolePill, isSeller ? styles.rolePillSeller : styles.rolePillBuyer]}>
                 {isSeller
@@ -287,23 +321,104 @@ export default function Profile() {
             </View>
           )}
 
-          {/* ── My Listings ── */}
-          <View style={[styles.card, Shadows.soft]}>
-            <Text style={styles.cardTitle}>{t('profile.myListings')}</Text>
-            {userListings.length === 0 && (
-              <View style={styles.empty}>
-                <AlertCircle size={32} color={Colors.mutedForeground} />
-                <Text style={styles.emptyText}>{t('profile.noListings')}</Text>
+          {/* ── My Listings (for Seller) ── */}
+          {isSeller && (
+            <View style={[styles.card, Shadows.soft]}>
+              <View style={styles.cardHeaderWithAction}>
+                <Text style={styles.cardTitle}>{t('profile.myListings')}</Text>
                 <TouchableOpacity
-                  style={styles.addBtn}
+                  style={styles.addMiniBtn}
                   onPress={() => router.push('/(tabs)/add')}
                 >
-                  <Plus size={16} color={Colors.white} />
-                  <Text style={styles.addBtnText}>{t('profile.createFirstListing')}</Text>
+                  <Plus size={14} color={Colors.primary} />
+                  <Text style={styles.addMiniBtnText}>{isUrdu ? 'نئی فصل' : 'Add Crop'}</Text>
                 </TouchableOpacity>
               </View>
-            )}
-          </View>
+
+              {loadingListings ? (
+                <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 16 }} />
+              ) : userListings.length === 0 ? (
+                <View style={styles.empty}>
+                  <AlertCircle size={32} color={Colors.mutedForeground} />
+                  <Text style={styles.emptyText}>{t('profile.noListings')}</Text>
+                  <TouchableOpacity
+                    style={styles.addBtn}
+                    onPress={() => router.push('/(tabs)/add')}
+                  >
+                    <Plus size={16} color={Colors.white} />
+                    <Text style={styles.addBtnText}>{t('profile.createFirstListing')}</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.listingsGrid}>
+                  {userListings.map((listing) => (
+                    <TouchableOpacity
+                      key={listing.id}
+                      style={styles.listingItem}
+                      onPress={() => router.push('/crop-details' as any)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.listingItemLeft}>
+                        <View style={styles.listingIconBox}>
+                          <Package size={18} color={Colors.primary} />
+                        </View>
+                        <View style={styles.listingInfo}>
+                          <Text style={styles.listingTitle}>{listing.title}</Text>
+                          <Text style={styles.listingMeta}>
+                            {listing.quantity} {listing.quantity_unit} • PKR {listing.price.toLocaleString()}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.listingItemRight}>
+                        <View style={styles.activePill}>
+                          <Text style={styles.activePillText}>{isUrdu ? 'فعال' : 'Active'}</Text>
+                        </View>
+                        <ChevronRight size={16} color={Colors.mutedForeground} />
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* ── My Bids & Negotiations (for Buyer) ── */}
+          {!isSeller && (
+            <View style={[styles.card, Shadows.soft]}>
+              <View style={styles.cardHeaderWithAction}>
+                <Text style={styles.cardTitle}>{isUrdu ? 'میری خریداریاں اور بولیاں' : 'My Bids & Orders'}</Text>
+                <TouchableOpacity
+                  style={styles.addMiniBtn}
+                  onPress={() => router.push('/(tabs)/browse')}
+                >
+                  <ShoppingBag size={14} color={Colors.primary} />
+                  <Text style={styles.addMiniBtnText}>{isUrdu ? 'مارکیٹ' : 'Market'}</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.bidList}>
+                <TouchableOpacity
+                  style={styles.bidItem}
+                  onPress={() => router.push('/trade/trade-101')}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.bidMonogram}>
+                    <Text style={styles.bidMonogramText}>W</Text>
+                  </View>
+                  <View style={styles.bidInfo}>
+                    <Text style={styles.bidName}>{isUrdu ? 'اعلیٰ کوالٹی گندم' : 'Premium Quality Wheat'}</Text>
+                    <Text style={styles.bidAmount}>PKR 85,000 / {t('common.pkrPerMann')}</Text>
+                    <Text style={styles.bidMeta}>{isUrdu ? 'مذاکرات جاری ہیں' : 'Negotiation in progress'}</Text>
+                  </View>
+                  <View style={[styles.statusBadge, { backgroundColor: Colors.primaryBg }]}>
+                    <Text style={[styles.statusText, { color: Colors.primary }]}>
+                      {isUrdu ? 'فعال ڈیل' : 'Active Deal'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -377,12 +492,31 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.white,
   },
+  avatarImage: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+  },
   name: {
     fontSize: FontSize.lg,
     fontWeight: '800',
     color: Colors.foreground,
     textAlign: 'center',
     marginTop: -Spacing.xs,
+  },
+  nameUrdu: {
+    fontSize: FontSize.md,
+    fontWeight: '800',
+    color: Colors.primary,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  cnicText: {
+    fontSize: FontSize.xs,
+    fontWeight: '600',
+    color: Colors.mutedForeground,
+    textAlign: 'center',
+    marginTop: 2,
   },
   locationRow: {
     flexDirection: 'row',
@@ -639,5 +773,81 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: FontSize.sm,
     fontWeight: '700',
+  },
+  cardHeaderWithAction: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  addMiniBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.primaryBg,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: `${Colors.primary}30`,
+  },
+  addMiniBtnText: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  listingsGrid: {
+    gap: Spacing.sm,
+  },
+  listingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  listingItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    flex: 1,
+  },
+  listingIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primaryBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listingInfo: {
+    flex: 1,
+  },
+  listingTitle: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+    color: Colors.foreground,
+  },
+  listingMeta: {
+    fontSize: FontSize.xs,
+    color: Colors.mutedForeground,
+    marginTop: 2,
+  },
+  listingItemRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  activePill: {
+    backgroundColor: Colors.successBg,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.sm,
+  },
+  activePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.success,
   },
 });

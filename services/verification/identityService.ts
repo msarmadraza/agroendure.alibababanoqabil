@@ -133,6 +133,8 @@ export async function confirmUserIdentity(
     await supabase.from('profiles').update({
       identity_verified: true,
       identity_verification_status: 'verified',
+      cnic_holder_name: holderName,
+      cnic_number: cnicNumber,
     }).eq('id', userId);
   } catch (err) {
     console.warn('DB identity update fallback warning:', err);
@@ -140,3 +142,116 @@ export async function confirmUserIdentity(
 
   return { success: true };
 }
+
+const STORAGE_KEY_PROFILES = 'agroendure_saved_profiles';
+
+export async function findProfileByCNIC(cnicNumber: string): Promise<any | null> {
+  const normalized = cnicNumber.replace(/\D/g, '');
+  if (!normalized) return null;
+
+  // 1. Check local storage
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY_PROFILES);
+      if (raw) {
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          const found = list.find(
+            (p: any) => p.cnic_number && p.cnic_number.replace(/\D/g, '') === normalized
+          );
+          if (found) return found;
+        }
+      }
+    } catch {}
+  }
+
+  // 2. Query Supabase DB
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('cnic_number', cnicNumber)
+      .maybeSingle();
+
+    if (!error && data) {
+      saveProfileLocally(data);
+      return data;
+    }
+  } catch (err) {
+    console.warn('Supabase findProfileByCNIC warning:', err);
+  }
+
+  return null;
+}
+
+export async function saveProfileLocally(profile: any): Promise<void> {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY_PROFILES);
+      let list: any[] = [];
+      if (raw) {
+        try {
+          list = JSON.parse(raw) || [];
+        } catch {}
+      }
+      list = [profile, ...list.filter((p: any) => p.id !== profile.id && p.cnic_number !== profile.cnic_number)];
+      window.localStorage.setItem(STORAGE_KEY_PROFILES, JSON.stringify(list));
+      window.localStorage.setItem('agroendure_active_profile', JSON.stringify(profile));
+    } catch {}
+  }
+}
+
+export async function createOrUpdateProfileWithIdentity(profileData: {
+  id?: string;
+  role: 'buyer' | 'seller';
+  cnicNumber: string;
+  holderName: string;
+  holderNameUrdu?: string | null;
+  phone?: string | null;
+  avatarUrl?: string | null;
+  preferredLanguage?: string;
+}): Promise<any> {
+  const existing = await findProfileByCNIC(profileData.cnicNumber);
+  const userId = profileData.id || existing?.id || `user-${Date.now()}`;
+
+  const profile: any = {
+    id: userId,
+    full_name: profileData.holderName,
+    full_name_ur: profileData.holderNameUrdu || existing?.full_name_ur || null,
+    cnic_holder_name: profileData.holderName,
+    cnic_holder_name_ur: profileData.holderNameUrdu || existing?.cnic_holder_name_ur || null,
+    cnic_number: profileData.cnicNumber,
+    role: profileData.role || existing?.role || 'seller',
+    phone: profileData.phone || existing?.phone || null,
+    avatar_url: profileData.avatarUrl || existing?.avatar_url || null,
+    preferred_language: profileData.preferredLanguage || existing?.preferred_language || 'ur',
+    identity_verified: true,
+    identity_verification_status: 'verified',
+    onboarding_completed: true,
+    onboarding_completed_at: new Date().toISOString(),
+    created_at: existing?.created_at || new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  // 1. Save locally
+  await saveProfileLocally(profile);
+
+  // 2. Save to Supabase
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert(profile)
+      .select()
+      .maybeSingle();
+
+    if (!error && data) {
+      await saveProfileLocally(data);
+      return data;
+    }
+  } catch (err) {
+    console.warn('Supabase profile upsert fallback warning:', err);
+  }
+
+  return profile;
+}
+

@@ -6,6 +6,7 @@ export interface OnboardingData {
   role: UserRole | null;
   preferredLanguage: string;
   cnicHolderName: string | null;
+  cnicHolderNameUrdu?: string | null;
   cnicNumber: string | null;
   facePhotoUri: string | null;
   phoneNumber: string | null;
@@ -15,7 +16,7 @@ interface OnboardingContextType {
   data: OnboardingData;
   setRole: (role: UserRole) => void;
   setLanguage: (lang: string) => void;
-  setCnicData: (name: string, cnic: string) => void;
+  setCnicData: (name: string, cnic: string, nameUrdu?: string | null) => void;
   setFacePhoto: (uri: string) => void;
   setPhone: (phone: string) => void;
   completeOnboarding: (userId: string) => Promise<boolean>;
@@ -26,6 +27,7 @@ const defaultData: OnboardingData = {
   role: null,
   preferredLanguage: 'ur',
   cnicHolderName: null,
+  cnicHolderNameUrdu: null,
   cnicNumber: null,
   facePhotoUri: null,
   phoneNumber: null,
@@ -75,25 +77,32 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
   const setRole = (role: UserRole) => update({ role });
   const setLanguage = (preferredLanguage: string) => update({ preferredLanguage });
-  const setCnicData = (cnicHolderName: string, cnicNumber: string) =>
-    update({ cnicHolderName, cnicNumber });
+  const setCnicData = (cnicHolderName: string, cnicNumber: string, cnicHolderNameUrdu?: string | null) =>
+    update({ cnicHolderName, cnicNumber, cnicHolderNameUrdu: cnicHolderNameUrdu || null });
   const setFacePhoto = (facePhotoUri: string) => update({ facePhotoUri });
   const setPhone = (phoneNumber: string) => update({ phoneNumber });
 
   const completeOnboarding = async (userId: string): Promise<boolean> => {
     try {
-      const { error } = await supabase.from('profiles').update({
+      const patch = {
         role: data.role,
         preferred_language: data.preferredLanguage,
+        full_name: data.cnicHolderName || 'User',
+        full_name_ur: data.cnicHolderNameUrdu || null,
         cnic_holder_name: data.cnicHolderName,
+        cnic_holder_name_ur: data.cnicHolderNameUrdu || null,
         cnic_number: data.cnicNumber,
+        avatar_url: data.facePhotoUri || null,
+        face_photo_url: data.facePhotoUri || null,
         phone: data.phoneNumber,
         phone_verified: true,
         identity_verified: true,
         identity_verification_status: 'verified',
         onboarding_completed: true,
         onboarding_completed_at: new Date().toISOString(),
-      }).eq('id', userId);
+      };
+
+      const { error } = await supabase.from('profiles').update(patch).eq('id', userId);
 
       if (error) {
         console.warn('Onboarding profile update warning:', error);

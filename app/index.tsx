@@ -42,11 +42,13 @@ import {
   UserCheck,
 } from 'lucide-react-native';
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
+import { useLanguage } from '@/services/i18n/languageContext';
 import { useDemoAuth } from '@/services/auth/demoAuthContext';
 import { useOnboarding } from '@/services/auth/onboardingContext';
 import { processCNICVerificationImage } from '@/services/gemini/cnicVerification';
-import { confirmUserIdentity } from '@/services/verification/identityService';
+import { confirmUserIdentity, findProfileByCNIC, createOrUpdateProfileWithIdentity } from '@/services/verification/identityService';
 import { verifyFaceForOnboarding, imageUriToBase64 } from '@/services/verification/faceOnboardingService';
+import { translateEnglishNameToUrdu } from '@/services/gemini/nameTranslationService';
 import { CNICExtractionResult, ExtractionSource } from '@/types/identityVerification';
 import { CNICUploadBox } from '@/components/verification/CNICUploadBox';
 import { CNICResultCard } from '@/components/verification/CNICResultCard';
@@ -78,7 +80,8 @@ const SLIDES = [
 
 export default function OnboardingFlow() {
   const router = useRouter();
-  const { activeUser, setRealProfile } = useDemoAuth();
+  const { isUrdu } = useLanguage();
+  const { activeUser, setRealProfile, loginWithProfile } = useDemoAuth();
   const {
     data,
     setRole,
@@ -173,8 +176,49 @@ export default function OnboardingFlow() {
     try {
       setIsCnicSubmitting(true);
       setCnicError(null);
+
+      // 1. Resolve Urdu name (via OCR or AI transliteration)
+      let urduName = cnicResult?.holder_name_urdu;
+      if (!urduName || !/[\u0600-\u06FF]/.test(urduName)) {
+        urduName = await translateEnglishNameToUrdu(finalName);
+      }
+
+      // 2. Check if this CNIC already belongs to an existing user
+      const existingProfile = await findProfileByCNIC(finalCnic);
+      if (existingProfile) {
+        loginWithProfile(existingProfile);
+        setCnicData(existingProfile.full_name || finalName, finalCnic, existingProfile.full_name_ur || urduName);
+        if (existingProfile.avatar_url) {
+          setFacePhoto(existingProfile.avatar_url);
+        }
+        if (existingProfile.role) {
+          setRole(existingProfile.role);
+        }
+
+        Alert.alert(
+          isUrdu ? 'خوش آمدید!' : 'Welcome Back!',
+          isUrdu
+            ? `آپ کا شناختی کارڈ ریکارڈ (${existingProfile.full_name || existingProfile.full_name_ur}) مل گیا ہے۔ آپ کامیابی سے لاگ ان ہو گئے ہیں۔`
+            : `Existing profile found for this CNIC (${existingProfile.full_name}). You are now logged in.`,
+          [
+            {
+              text: isUrdu ? 'ڈیش بورڈ پر جائیں' : 'Continue to Dashboard',
+              onPress: () => {
+                if (existingProfile.role === 'buyer') {
+                  router.replace('/(tabs)/browse');
+                } else {
+                  router.replace('/(tabs)');
+                }
+              },
+            },
+          ]
+        );
+        return;
+      }
+
+      // 3. New User Registration
       await confirmUserIdentity(userId, finalName, finalCnic, source);
-      setCnicData(finalName, finalCnic);
+      setCnicData(finalName, finalCnic, urduName);
       setStep('face');
     } catch {
       setCnicError('Identity confirmation failed. Please try again.');
@@ -220,7 +264,7 @@ export default function OnboardingFlow() {
       setIsFaceVerifying(true);
       setFacePhoto(facePhotoUri);
       const base64 = await imageUriToBase64(facePhotoUri);
-      await verifyFaceForOnboarding(userId, base64);
+      await verifyFaceForOnboarding(userId, base64, facePhotoUri);
       setStep('phone');
     } catch {
       Alert.alert('Error', 'Face verification failed. Please try again.');
@@ -249,11 +293,25 @@ export default function OnboardingFlow() {
     if (entered.length !== 4) return;
     try {
       setIsPhoneVerifying(true);
-      setPhone(`+92${phoneNumber}`);
-      const success = await completeOnboarding(userId);
-      if (success) {
-        navigateToDashboard();
-      }
+      const fullPhone = `+92${phoneNumber}`;
+      setPhone(fullPhone);
+
+      // Create or update profile in Supabase & local storage
+      const savedProfile = await createOrUpdateProfileWithIdentity({
+        id: userId,
+        role: data.role || selectedRole || 'seller',
+        cnicNumber: data.cnicNumber || '35202-1234567-1',
+        holderName: data.cnicHolderName || 'User',
+        holderNameUrdu: data.cnicHolderNameUrdu || null,
+        phone: fullPhone,
+        avatarUrl: data.facePhotoUri || facePhotoUri || null,
+        preferredLanguage: data.preferredLanguage || selectedLang || 'ur',
+      });
+
+      loginWithProfile(savedProfile);
+      await completeOnboarding(savedProfile.id);
+
+      navigateToDashboard();
     } catch {
       Alert.alert('Error', 'Verification failed. Please try again.');
     } finally {

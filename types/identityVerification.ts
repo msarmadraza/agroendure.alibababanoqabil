@@ -14,6 +14,7 @@ export interface CNICExtractionResult {
   document_type: string | null;
   is_readable: boolean;
   holder_name: string | null;
+  holder_name_urdu?: string | null;
   cnic_number: string | null;
   confidence: number;
   issues: string[];
@@ -24,6 +25,7 @@ export interface IdentityVerificationRecord {
   user_id: string;
   document_type: string;
   holder_name: string | null;
+  holder_name_urdu?: string | null;
   cnic_number: string | null;
   verification_status: CNICVerificationStatus;
   extraction_source: ExtractionSource;

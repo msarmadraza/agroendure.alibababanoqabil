@@ -15,9 +15,21 @@ export interface FaceVerificationResponse {
  */
 export async function verifyFaceForOnboarding(
   userId: string,
-  imageBase64: string
+  imageBase64: string,
+  imageUri?: string
 ): Promise<FaceVerificationResponse> {
   const storagePath = `${userId}/face-photo.jpg`;
+  const photoUrl = imageUri || imageBase64;
+
+  try {
+    await supabase.from('profiles').update({
+      face_verified: true,
+      face_photo_url: photoUrl,
+      avatar_url: photoUrl,
+    }).eq('id', userId);
+  } catch (err) {
+    console.warn('Profile avatar update warning:', err);
+  }
 
   try {
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
@@ -51,7 +63,7 @@ export async function verifyFaceForOnboarding(
 
     if (error) {
       console.warn('Edge Function not available, using simulated verification:', error.message);
-      return simulateVerification(userId);
+      return simulateVerification(userId, photoUrl);
     }
 
     if (data?.unavailable) {
@@ -66,17 +78,18 @@ export async function verifyFaceForOnboarding(
     };
   } catch {
     console.warn('Edge Function call failed, using simulated verification');
-    return simulateVerification(userId);
+    return simulateVerification(userId, photoUrl);
   }
 }
 
-async function simulateVerification(userId: string): Promise<FaceVerificationResponse> {
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+async function simulateVerification(userId: string, photoUrl?: string): Promise<FaceVerificationResponse> {
+  await new Promise((resolve) => setTimeout(resolve, 1500));
 
   try {
     await supabase.from('profiles').update({
       face_verified: true,
-      face_photo_url: `${userId}/face-photo.jpg`,
+      face_photo_url: photoUrl || `${userId}/face-photo.jpg`,
+      avatar_url: photoUrl || `${userId}/face-photo.jpg`,
     }).eq('id', userId);
   } catch {
     // Non-critical

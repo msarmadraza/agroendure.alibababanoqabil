@@ -3,6 +3,7 @@ export type UserRole = 'buyer' | 'seller';
 export interface Profile {
   id: string;
   full_name: string;
+  full_name_ur?: string | null;
   phone: string | null;
   role: UserRole;
   avatar_url: string | null;
@@ -15,6 +16,7 @@ export interface Profile {
   face_verified?: boolean;
   face_photo_url?: string | null;
   cnic_holder_name?: string | null;
+  cnic_holder_name_ur?: string | null;
   cnic_number?: string | null;
   created_at: string;
   updated_at: string;

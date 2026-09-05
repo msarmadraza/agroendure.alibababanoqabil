@@ -1,4 +1,5 @@
 import { CNICExtractionResult } from '@/types/identityVerification';
+import { translateEnglishNameToUrdu } from './nameTranslationService';
 
 const NOVITA_API_URL = 'https://api.novita.ai/v3/openai/chat/completions';
 const NOVITA_API_KEY = process.env.EXPO_PUBLIC_NOVITA_API_KEY || process.env.NOVITA_API_KEY || '';
@@ -35,15 +36,17 @@ const CNIC_EXTRACTION_PROMPT = `You are a Pakistani CNIC (national identity card
 Analyze the provided image and determine if it is a valid Pakistani CNIC document.
 
 Extract the following information if visible:
-1. Full name of the card holder (in English transliteration if written in Urdu)
-2. CNIC number (format: XXXXX-XXXXXXX-X, 13 digits with dashes)
+1. Full name of the card holder in English / Romanized script
+2. Full name of the card holder in Urdu script (e.g. محمد احمد علی). If not written in Urdu on the card, transliterate the English name into standard Urdu script.
+3. CNIC number (format: XXXXX-XXXXXXX-X, 13 digits with dashes)
 
 Return your analysis as a JSON object with EXACTLY these fields:
 {
   "document_detected": true or false,
   "document_type": "pakistani_cnic" or null,
   "is_readable": true or false,
-  "holder_name": "extracted name" or null,
+  "holder_name": "extracted English name" or null,
+  "holder_name_urdu": "نام اردو رسم الخط میں" or null,
   "cnic_number": "XXXXX-XXXXXXX-X" or null,
   "confidence": 0.0 to 1.0,
   "issues": ["list of issues found"] or []
@@ -54,7 +57,7 @@ Rules:
 - If the image is not a CNIC, set document_detected to false
 - If text is not readable, set is_readable to false and explain in issues
 - CNIC numbers must be 13 digits in format XXXXX-XXXXXXX-X
-- For holder_name, use the English/romanized version if both Urdu and English are present
+- Provide both holder_name (English) and holder_name_urdu (Urdu)
 - Set confidence based on how clearly you could read the document`;
 
 export async function processCNICVerificationImage(
@@ -107,24 +110,33 @@ export async function processCNICVerificationImage(
       return buildFallbackResult();
     }
 
-    return parseOcrResponse(content);
+    const result = await parseOcrResponse(content);
+    if (result.holder_name && (!result.holder_name_urdu || !/[\u0600-\u06FF]/.test(result.holder_name_urdu))) {
+      result.holder_name_urdu = await translateEnglishNameToUrdu(result.holder_name);
+    }
+    return result;
   } catch (err) {
     console.warn('Novita AI CNIC OCR error:', err);
     return buildFallbackResult();
   }
 }
 
-function parseOcrResponse(content: string): CNICExtractionResult {
+async function parseOcrResponse(content: string): Promise<CNICExtractionResult> {
   try {
     const cleaned = content
       .replace(/```json\s*/gi, '')
       .replace(/```\s*/g, '')
       .trim();
 
-    const parsed = JSON.parse(cleaned) as CNICExtractionResult;
+    const parsed = JSON.parse(cleaned) as any;
 
     if (typeof parsed.document_detected !== 'boolean') {
       return buildFallbackResult();
+    }
+
+    let urduName = parsed.holder_name_urdu || null;
+    if (!urduName && parsed.holder_name) {
+      urduName = await translateEnglishNameToUrdu(parsed.holder_name);
     }
 
     return {
@@ -132,6 +144,7 @@ function parseOcrResponse(content: string): CNICExtractionResult {
       document_type: parsed.document_type || 'pakistani_cnic',
       is_readable: parsed.is_readable ?? true,
       holder_name: parsed.holder_name || null,
+      holder_name_urdu: urduName,
       cnic_number: parsed.cnic_number || null,
       confidence: parsed.confidence ?? 0.75,
       issues: parsed.issues || [],

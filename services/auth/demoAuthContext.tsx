@@ -38,6 +38,7 @@ interface DemoAuthContextType {
   realProfile: Profile | null;
   loading: boolean;
   setRealProfile: (profile: Profile | null) => void;
+  loginWithProfile: (profile: Profile) => void;
 }
 
 const DemoAuthContext = createContext<DemoAuthContextType>({
@@ -51,13 +52,35 @@ const DemoAuthContext = createContext<DemoAuthContextType>({
   realProfile: null,
   loading: true,
   setRealProfile: () => {},
+  loginWithProfile: () => {},
 });
+
+const ACTIVE_PROFILE_KEY = 'agroendure_active_profile';
+
+function loadStoredProfile(): Profile | null {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const raw = window.localStorage.getItem(ACTIVE_PROFILE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+  }
+  return null;
+}
 
 export function DemoAuthProvider({ children }: { children: ReactNode }) {
   const [isDemoSeller, setIsDemoSeller] = useState(false);
   const [realUser, setRealUser] = useState<any | null>(null);
-  const [realProfile, setRealProfile] = useState<Profile | null>(null);
+  const [realProfile, setRealProfile] = useState<Profile | null>(loadStoredProfile);
   const [loading, setLoading] = useState(true);
+
+  const loginWithProfile = (profile: Profile) => {
+    setRealProfile(profile);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        window.localStorage.setItem(ACTIVE_PROFILE_KEY, JSON.stringify(profile));
+      } catch {}
+    }
+  };
 
   useEffect(() => {
     // Check for real Supabase session
@@ -66,6 +89,10 @@ export function DemoAuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         fetchProfile(session.user.id);
       } else {
+        const stored = loadStoredProfile();
+        if (stored) {
+          setRealProfile(stored);
+        }
         setLoading(false);
       }
     });
@@ -75,7 +102,12 @@ export function DemoAuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         fetchProfile(session.user.id);
       } else {
-        setRealProfile(null);
+        const stored = loadStoredProfile();
+        if (stored) {
+          setRealProfile(stored);
+        } else {
+          setRealProfile(null);
+        }
         setLoading(false);
       }
     });
@@ -90,9 +122,12 @@ export function DemoAuthProvider({ children }: { children: ReactNode }) {
         .select('*')
         .eq('id', userId)
         .single();
-      setRealProfile(data);
+      if (data) {
+        setRealProfile(data);
+        loginWithProfile(data);
+      }
     } catch {
-      setRealProfile(null);
+      // keep stored profile if any
     } finally {
       setLoading(false);
     }
@@ -110,12 +145,19 @@ export function DemoAuthProvider({ children }: { children: ReactNode }) {
   const toggleRole = () => {
     if (!realProfile) {
       setIsDemoSeller((prev) => !prev);
+    } else {
+      const newRole: 'buyer' | 'seller' = realProfile.role === 'seller' ? 'buyer' : 'seller';
+      setUserRole(newRole);
     }
   };
 
   const setUserRole = (role: 'buyer' | 'seller') => {
     if (!realProfile) {
       setIsDemoSeller(role === 'seller');
+    } else {
+      const updated = { ...realProfile, role };
+      loginWithProfile(updated);
+      supabase.from('profiles').update({ role }).eq('id', realProfile.id).then();
     }
   };
 
@@ -132,6 +174,7 @@ export function DemoAuthProvider({ children }: { children: ReactNode }) {
         realProfile,
         loading,
         setRealProfile,
+        loginWithProfile,
       }}
     >
       {children}

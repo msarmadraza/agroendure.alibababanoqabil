@@ -22,6 +22,8 @@ import {
   ChevronRight,
   Droplets,
   Wind,
+  ShoppingBag,
+  Search,
 } from 'lucide-react-native';
 import { VoiceButton } from '@/components/VoiceButton';
 import { CropCard } from '@/components/CropCard';
@@ -97,23 +99,43 @@ export default function Dashboard() {
     },
   ];
 
-  const metrics = [
-    {
-      icon: Building2,
-      value: String(activeListingsCount).padStart(2, '0'),
-      label: t('home.activeListings'),
-    },
-    {
-      icon: Handshake,
-      value: String(activeNegotiationsCount).padStart(2, '0'),
-      label: t('home.activeNegotiations'),
-    },
-    {
-      icon: Flame,
-      value: topActiveBid > 0 ? `${(topActiveBid / 1000).toFixed(0)}K` : '—',
-      label: t('home.topActiveBid'),
-    },
-  ];
+  const isSeller = activeRole === 'seller';
+
+  const metrics = isSeller
+    ? [
+        {
+          icon: Building2,
+          value: String(activeListingsCount).padStart(2, '0'),
+          label: t('home.activeListings'),
+        },
+        {
+          icon: Handshake,
+          value: String(activeNegotiationsCount).padStart(2, '0'),
+          label: t('home.activeNegotiations'),
+        },
+        {
+          icon: Flame,
+          value: topActiveBid > 0 ? `${(topActiveBid / 1000).toFixed(0)}K` : '—',
+          label: t('home.topActiveBid'),
+        },
+      ]
+    : [
+        {
+          icon: ShoppingBag,
+          value: String(recentCrops.length || 6).padStart(2, '0'),
+          label: isUrdu ? 'دستیاب فصلیں' : 'Available Crops',
+        },
+        {
+          icon: Handshake,
+          value: String(activeNegotiationsCount).padStart(2, '0'),
+          label: t('home.activeNegotiations'),
+        },
+        {
+          icon: Flame,
+          value: '01',
+          label: isUrdu ? 'میری پیشکشیں' : 'Active Bids',
+        },
+      ];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -139,28 +161,56 @@ export default function Dashboard() {
 
         <View style={styles.divider} />
 
-        {/* ── Voice CTA ── */}
-        <View style={styles.voiceCard}>
-          <View style={styles.voiceCardLeft}>
-            <View style={styles.micCircle}>
-              <Mic size={22} color={Colors.white} />
+        {/* ── Role-Specific Hero CTA ── */}
+        {isSeller ? (
+          <View style={styles.voiceCard}>
+            <View style={styles.voiceCardLeft}>
+              <View style={styles.micCircle}>
+                <Mic size={22} color={Colors.white} />
+              </View>
+              <View style={styles.voiceTexts}>
+                <Text style={styles.voiceTitle}>{t('home.voiceListingTitle')}</Text>
+                <Text style={styles.voiceSubtitle}>{t('home.voiceListingSub')}</Text>
+              </View>
             </View>
-            <View style={styles.voiceTexts}>
-              <Text style={styles.voiceTitle}>{t('home.voiceListingTitle')}</Text>
-              <Text style={styles.voiceSubtitle}>{t('home.voiceListingSub')}</Text>
-            </View>
+            <VoiceButton
+              isRecording={isRecording}
+              onStartRecording={() => setIsRecording(true)}
+              onStopRecording={() => {
+                setIsRecording(false);
+                router.push('/(tabs)/add');
+              }}
+              size="sm"
+            />
           </View>
-          <VoiceButton
-            isRecording={isRecording}
-            onStartRecording={() => setIsRecording(true)}
-            onStopRecording={() => {
-              setIsRecording(false);
-              router.push('/(tabs)/add');
-            }}
-            size="sm"
-          />
-        </View>
-        {isRecording && (
+        ) : (
+          <View style={styles.buyerHeroCard}>
+            <View style={styles.voiceCardLeft}>
+              <View style={styles.buyerIconCircle}>
+                <ShoppingBag size={22} color={Colors.white} />
+              </View>
+              <View style={styles.voiceTexts}>
+                <Text style={styles.voiceTitle}>
+                  {isUrdu ? 'منڈی سے تازہ فصل خریدیں' : 'Explore Mandi Marketplace'}
+                </Text>
+                <Text style={styles.voiceSubtitle}>
+                  {isUrdu ? 'تصدیق شدہ کسانوں سے براہ راست بولی لگائیں' : 'Bid directly with verified local farmers'}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.buyerBrowseBtn}
+              onPress={() => router.push('/(tabs)/browse')}
+              activeOpacity={0.85}
+            >
+              <Search size={16} color={Colors.primary} />
+              <Text style={styles.buyerBrowseBtnText}>
+                {isUrdu ? 'منڈی دیکھیں' : 'Browse Mandi'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {isRecording && isSeller && (
           <Text style={styles.recordingText}>{t('home.listeningVoice')}</Text>
         )}
 
@@ -350,6 +400,37 @@ const styles = StyleSheet.create({
   voiceSubtitle: {
     fontSize: FontSize.xs,
     color: 'rgba(255,255,255,0.8)',
+  },
+  buyerHeroCard: {
+    backgroundColor: '#166534',
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  buyerIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buyerBrowseBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.white,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.lg,
+  },
+  buyerBrowseBtnText: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+    color: Colors.primary,
   },
   recordingText: {
     fontSize: FontSize.sm,
