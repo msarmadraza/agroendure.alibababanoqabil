@@ -24,64 +24,17 @@ import {
 import { crossTabSync } from '@/services/trade/crossTabSync';
 import { useDemoAuth } from '@/services/auth/demoAuthContext';
 import { supabase } from '@/services/supabase/client';
-import { AgreementSectionCard } from '@/components/agreement/AgreementSectionCard';
-import { ConfirmationStatusBadge } from '@/components/agreement/ConfirmationStatusBadge';
-import { Badge } from '@/components/ui/Badge';
 import {
-  Package,
-  Coins,
-  Truck,
-  CreditCard,
   ArrowLeft,
   CheckCircle2,
   FileCheck,
   ShieldCheck,
   Clock,
   UserCheck,
-  Sparkles,
   FileText,
   User,
+  Sparkles,
 } from 'lucide-react-native';
-
-const SECTIONS = [
-  {
-    key: 'product',
-    titleUrdu: 'فصل و جنس کی تفصیلات',
-    titleEng: 'Product Specifications',
-    icon: <Package size={17} color="#15803D" />,
-    fields: ['product_name', 'quantity'],
-  },
-  {
-    key: 'price',
-    titleUrdu: 'طے شدہ قیمت و ادائیگی',
-    titleEng: 'Agreed Price & Payment Value',
-    icon: <Coins size={17} color="#15803D" />,
-    fields: ['price_per_unit'],
-  },
-  {
-    key: 'delivery',
-    titleUrdu: 'ترسیل و ڈیلیوری مقام',
-    titleEng: 'Logistics & Delivery Schedule',
-    icon: <Truck size={17} color="#15803D" />,
-    fields: ['delivery_location', 'delivery_date'],
-  },
-  {
-    key: 'payment',
-    titleUrdu: 'طریقہ ادائیگی و شرائط',
-    titleEng: 'Payment Method & Terms',
-    icon: <CreditCard size={17} color="#15803D" />,
-    fields: ['payment_method'],
-  },
-];
-
-const TERM_METADATA: Record<string, { labelUrdu: string; labelEng: string }> = {
-  product_name: { labelUrdu: 'جنس / فصل کا نام', labelEng: 'Product Name' },
-  quantity: { labelUrdu: 'مقدار و وزن', labelEng: 'Quantity' },
-  price_per_unit: { labelUrdu: 'طے شدہ ریٹ (فی من)', labelEng: 'Agreed Unit Price' },
-  delivery_location: { labelUrdu: 'ترسیل کا مقام', labelEng: 'Delivery Location' },
-  delivery_date: { labelUrdu: 'ترسیل کی تاریخ', labelEng: 'Delivery Date' },
-  payment_method: { labelUrdu: 'طریقہ ادائیگی', labelEng: 'Payment Method' },
-};
 
 export default function AgreementReviewScreen() {
   const { id, faceVerified } = useLocalSearchParams<{ id: string; faceVerified?: string }>();
@@ -90,8 +43,8 @@ export default function AgreementReviewScreen() {
   const { activeRole } = useDemoAuth();
   const currentRole = activeRole || 'buyer';
   const otherRole = currentRole === 'buyer' ? 'seller' : 'buyer';
-  const currentRoleName = currentRole === 'buyer' ? 'خریدار' : 'فروخت کنندہ';
-  const otherRoleName = otherRole === 'seller' ? 'فروخت کنندہ' : 'خریدار';
+  const currentRoleName = currentRole === 'buyer' ? 'خریدار (Buyer)' : 'فروخت کنندہ (Seller)';
+  const otherRoleName = otherRole === 'seller' ? 'فروخت کنندہ (Seller)' : 'خریدار (Buyer)';
 
   const [trade, setTrade] = useState<Trade | null>(null);
   const [terms, setTerms] = useState<AgreementTerm[]>(() => loadTradeTerms(tradeId));
@@ -101,7 +54,7 @@ export default function AgreementReviewScreen() {
   const [sellerConfirmedAt, setSellerConfirmedAt] = useState<string | null>(null);
   const [simulating, setSimulating] = useState(false);
 
-  // Load trade details and local confirmation state
+  // Load trade details and confirmation state
   useEffect(() => {
     async function load() {
       const localConf = loadTradeConfirmation(tradeId);
@@ -146,7 +99,6 @@ export default function AgreementReviewScreen() {
   }, [tradeId]);
 
   // Handle return from Face Verification
-  // IMPORTANT: Only the CURRENT active user is confirmed. The contract is ONLY finalized when both agree!
   const hasProcessedFaceVerified = useRef(false);
   useEffect(() => {
     if (faceVerified === 'true' && !hasProcessedFaceVerified.current) {
@@ -166,13 +118,13 @@ export default function AgreementReviewScreen() {
       }
 
       Alert.alert(
-        'تصدیق کامیاب • Verification Complete',
-        `آپ (${currentRoleName}) کی بائیو میٹرک تصدیق اور شرائط کی منظوری باضابطہ درج کر لی گئی ہے۔`
+        'تصدیق کامیاب • Verified',
+        `آپ کی بائیو میٹرک توثیق اور شرائط کی منظوری باضابطہ درج ہو چکی ہے۔`
       );
     }
-  }, [faceVerified, tradeId, currentRole, currentRoleName]);
+  }, [faceVerified, tradeId, currentRole]);
 
-  // Listen for real-time changes safely with unique channel identifier
+  // Safe Realtime channel subscription
   useEffect(() => {
     const uniqueChannelName = `agreement-trade-${tradeId}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const channel = supabase.channel(uniqueChannelName);
@@ -200,7 +152,6 @@ export default function AgreementReviewScreen() {
       console.warn('Realtime subscription warning:', channelErr);
     }
 
-    // Dual Cross-Window/Tab sync for live demos & multi-party testing
     const unsubscribeSync = crossTabSync.subscribe((payload) => {
       if (payload.tradeId === tradeId && payload.type === 'CONFIRMATION_UPDATED') {
         if (payload.role === 'buyer') {
@@ -217,7 +168,7 @@ export default function AgreementReviewScreen() {
       try {
         supabase.removeChannel(channel);
       } catch (err) {
-        console.warn('Error cleaning up realtime channel:', err);
+        console.warn('Error cleaning up channel:', err);
       }
       unsubscribeSync();
     };
@@ -226,9 +177,7 @@ export default function AgreementReviewScreen() {
   const bothConfirmed = buyerConfirmed && sellerConfirmed;
   const currentConfirmed = currentRole === 'buyer' ? buyerConfirmed : sellerConfirmed;
 
-  const findTerm = (field: string) => terms.find((t) => t.field_name === field);
-
-  const handleAction = async () => {
+  const handleAction = () => {
     if (bothConfirmed) {
       router.push(`/agreement/final/${tradeId}` as any);
       return;
@@ -240,12 +189,12 @@ export default function AgreementReviewScreen() {
     }
 
     Alert.alert(
-      'معاہدہ زیرِ توثیق • Awaiting Confirmation',
-      `آپ کی تصدیق درج ہو چکی ہے۔ قانونی معاہدے کے نفاذ کے لیے دوسرے فریق (${otherRoleName}) کی بائیو میٹرک توثیق درکار ہے۔`
+      'معاہدہ زیرِ توثیق • Awaiting Signature',
+      `آپ کی توثیق مکمل ہو چکی ہے۔ معاہدے کے قانونی نفاذ کے لیے دوسرے فریق (${otherRoleName}) کے دستخط درکار ہیں۔`
     );
   };
 
-  // Simulate other party confirmation for smooth demo/testing
+  // Simulate other party confirmation for demo
   const handleSimulateOtherParty = async () => {
     try {
       setSimulating(true);
@@ -262,11 +211,6 @@ export default function AgreementReviewScreen() {
         saveTradeConfirmation(tradeId, 'seller', true);
         await confirmTrade(tradeId, 'seller');
       }
-
-      Alert.alert(
-        'باہمی اتفاق مکمل • Mutual Agreement Complete',
-        `دونوں فریقین (${currentRoleName} اور ${otherRoleName}) کی شرائط پر رضامندی اور بائیو میٹرک توثیق مکمل ہو گئی ہے۔ اب حتمی قانونی معاہدہ دستاویز تیار ہے۔`
-      );
     } catch (err) {
       console.warn('Simulation error:', err);
     } finally {
@@ -274,242 +218,254 @@ export default function AgreementReviewScreen() {
     }
   };
 
-  const renderTermRow = (field: string) => {
-    const term = findTerm(field);
-    const value = term ? String(term.value) : '—';
-    const status = term?.status || 'agreed';
-    const meta = TERM_METADATA[field] || {
-      labelUrdu: field.replace(/_/g, ' '),
-      labelEng: field.replace(/_/g, ' '),
-    };
-
-    return (
-      <View key={field} style={styles.termRow}>
-        <View style={styles.termInfo}>
-          <Text style={styles.termLabelUrdu}>{meta.labelUrdu}</Text>
-          <Text style={styles.termLabelEng}>{meta.labelEng}</Text>
-          <Text style={styles.termValue}>{value}</Text>
-        </View>
-        <Badge status={status} />
-      </View>
-    );
+  // Helper values for the clean summary table
+  const findVal = (field: string, fallback: string) => {
+    const t = terms.find((item) => item.field_name === field);
+    return t ? String(t.value) : fallback;
   };
+
+  const productName = findVal('product_name', trade?.listing?.product_name || 'سپر باسمتی چاول (Super Basmati)');
+  const quantity = findVal('quantity', '100 من (100 Mann)');
+  const pricePerUnit = findVal('price_per_unit', 'PKR 5,700 / من');
+  const deliveryLocation = findVal('delivery_location', 'لاہور (Lahore)');
+  const deliveryDate = findVal('delivery_date', '10 ستمبر 2026');
+  const paymentMethod = findVal('payment_method', 'بینک ٹرانسفر / JazzCash');
+
+  // Compute total
+  const parseNum = (str: string) => {
+    const m = str.replace(/,/g, '').match(/\d+/);
+    return m ? parseInt(m[0], 10) : 0;
+  };
+  const pNum = parseNum(pricePerUnit) || 5700;
+  const qNum = parseNum(quantity) || 100;
+  const totalAmount = (pNum * qNum).toLocaleString();
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Header Document Card */}
+        
+        {/* 1. Sleek Unified Top Header */}
         <View style={styles.headerCard}>
           <View style={styles.headerTopRow}>
-            <View style={styles.headerTitleCol}>
-              <View style={styles.headerTitleRow}>
-                <FileText size={18} color="#15803D" />
-                <Text style={styles.headerTitle}>تجارتی معاہدے کا جائزہ</Text>
-              </View>
-              <Text style={styles.headerSubtitleEng}>Trade Agreement Review & Mutual Consent</Text>
+            <View style={styles.headerTitleGroup}>
+              <Text style={styles.headerMainTitle}>تجارتی معاہدہ</Text>
+              <Text style={styles.headerSubTitle}>Trade Agreement Review</Text>
             </View>
-            <View style={styles.tradeIdBadge}>
-              <Text style={styles.tradeIdText}>Trade #{tradeId}</Text>
+            <View style={styles.tradeTag}>
+              <Text style={styles.tradeTagText}>#{tradeId}</Text>
             </View>
           </View>
 
-          <Text style={styles.headerDescUrdu}>
-            معاہدے کے قانونی نفاذ کے لیے خریدار اور فروخت کنندہ دونوں کی بائیو میٹرک توثیق لازمی ہے۔
-          </Text>
-
-          {/* Current User Active Role Status */}
-          <View style={styles.currentRoleBar}>
-            <View style={styles.currentRoleLeft}>
-              <User size={13} color="#15803D" />
-              <Text style={styles.currentRoleBarText}>
-                آپ کا کردار: <Text style={styles.boldRoleText}>{currentRole === 'buyer' ? 'خریدار • Buyer' : 'فروخت کنندہ • Seller'}</Text>
-              </Text>
-            </View>
-            <View style={currentConfirmed ? styles.rolePillConfirmed : styles.rolePillPending}>
-              {currentConfirmed ? (
-                <CheckCircle2 size={11} color="#047857" />
-              ) : (
-                <Clock size={11} color="#B45309" />
-              )}
-              <Text style={currentConfirmed ? styles.rolePillTextConfirmed : styles.rolePillTextPending}>
-                {currentConfirmed ? 'توثیق مکمل' : 'توثیق درکار'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Dynamic Mutual Status Banner */}
-        {bothConfirmed ? (
-          <View style={styles.bannerConfirmed}>
-            <View style={styles.bannerIconBoxConfirmed}>
-              <ShieldCheck size={22} color="#15803D" />
-            </View>
-            <View style={styles.bannerContent}>
-              <Text style={styles.bannerTitleConfirmed}>باہمی معاہدہ باضابطہ طے پا گیا</Text>
-              <Text style={styles.bannerSubEngConfirmed}>Contract Legally Executed & Digitally Locked</Text>
-              <Text style={styles.bannerDescConfirmed}>
-                دونوں فریقین نے تمام شرائط تسلیم کر کے بائیو میٹرک توثیق مکمل کر لی ہے۔ قانونی ڈیجیٹل معاہدہ نافذ ہو چکا ہے۔
-              </Text>
-            </View>
-          </View>
-        ) : currentConfirmed ? (
-          <View style={styles.bannerPending}>
-            <View style={styles.bannerIconBoxPending}>
-              <Clock size={22} color="#B45309" />
-            </View>
-            <View style={styles.bannerContent}>
-              <Text style={styles.bannerTitlePending}>معاہدہ زیرِ توثیق ہے</Text>
-              <Text style={styles.bannerSubEngPending}>Awaiting Counterparty Confirmation</Text>
-              <Text style={styles.bannerDescPending}>
-                آپ کی جانب سے بائیو میٹرک توثیق اور شرائط کی منظوری درج ہو چکی ہے۔ دوسرے فریق ({otherRoleName}) کی توثیق کے بعد قانونی معاہدہ خودبخود مکمل ہو جائے گا۔
-              </Text>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.bannerInitial}>
-            <View style={styles.bannerIconBoxInitial}>
-              <FileText size={22} color="#0F766E" />
-            </View>
-            <View style={styles.bannerContent}>
-              <Text style={styles.bannerTitleInitial}>معاہدے کی شرائط کی جانچ و توثیق</Text>
-              <Text style={styles.bannerSubEngInitial}>Review Agreed Terms & Provide Biometric Signature</Text>
-              <Text style={styles.bannerDescInitial}>
-                درج ذیل شرائط کا بغور جائزہ لیں۔ معاہدے کی حتمی تشکیل کے لیے دونوں فریقین کی بائیو میٹرک تصدیق لازمی ہے۔
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* Both Parties Digital Signatures Section */}
-        <View style={styles.sectionHeadingWrapper}>
-          <Text style={styles.sectionHeadingTitle}>فریقین کی ڈیجیٹل توثیق • Both Parties Consent</Text>
-          <Text style={styles.sectionHeadingSub}>
-            معاہدے کے قانونی نفاذ کے لیے فریقین کے ڈیجیٹل دستخط لازمی ہیں
-          </Text>
-        </View>
-
-        <View style={styles.confirmationRow}>
-          <ConfirmationStatusBadge
-            roleLabel="Buyer"
-            roleSubLabel="خریدار"
-            partyName={trade?.buyer?.full_name || 'طارق ہول سیل خریدار'}
-            isConfirmed={buyerConfirmed}
-            confirmedAt={buyerConfirmedAt}
-            isCurrentUser={currentRole === 'buyer'}
-          />
-          <ConfirmationStatusBadge
-            roleLabel="Seller"
-            roleSubLabel="فروخت کنندہ"
-            partyName={trade?.seller?.full_name || 'چوہدری احمد کسان'}
-            isConfirmed={sellerConfirmed}
-            confirmedAt={sellerConfirmedAt}
-            isCurrentUser={currentRole === 'seller'}
-          />
-        </View>
-
-        {/* Demo Simulation Drawer for Testing */}
-        {currentConfirmed && !bothConfirmed && (
-          <View style={styles.demoSimulateCard}>
-            <View style={styles.demoHeaderRow}>
-              <View style={styles.demoIconBox}>
-                <Sparkles size={14} color="#0F766E" />
-              </View>
-              <View style={styles.demoTitleCol}>
-                <Text style={styles.demoTitle}>ڈیمو سمیولیشن • Demo Verification Mode</Text>
-                <Text style={styles.demoDesc}>
-                  ٹیسٹنگ کے لیے دوسرے فریق ({otherRoleName}) کی جانب سے توثیق درج کر کے معاہدے کی تکمیل کا مشاہدہ کریں:
+          {/* Single Clear Status Badge */}
+          <View style={styles.statusBanner}>
+            {bothConfirmed ? (
+              <View style={styles.statusRowConfirmed}>
+                <ShieldCheck size={16} color="#059669" />
+                <Text style={styles.statusTextConfirmed}>
+                  باہمی معاہدہ باضابطہ طے پا گیا • Digitally Executed
                 </Text>
               </View>
+            ) : currentConfirmed ? (
+              <View style={styles.statusRowPending}>
+                <Clock size={16} color="#D97706" />
+                <Text style={styles.statusTextPending}>
+                  آپ کی تصدیق مکمل • دوسرے فریق کے دستخط کا انتظار ہے
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.statusRowAction}>
+                <FileText size={16} color="#0F766E" />
+                <Text style={styles.statusTextAction}>
+                  شرائط کا جائزہ لیں اور بائیو میٹرک توثیق مکمل کریں
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* 2. Compact Symmetrical Signatures Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>فریقین کی ڈیجیٹل توثیق • Digital Signatures</Text>
+          
+          <View style={styles.signaturesRow}>
+            {/* Buyer Box */}
+            <View style={[styles.sigBox, buyerConfirmed ? styles.sigBoxConfirmed : styles.sigBoxPending]}>
+              <View style={styles.sigBoxHeader}>
+                <Text style={styles.sigRole}>خریدار (Buyer)</Text>
+                {currentRole === 'buyer' && (
+                  <View style={styles.youBadge}>
+                    <Text style={styles.youBadgeText}>آپ • You</Text>
+                  </View>
+                )}
+              </View>
+
+              <Text style={styles.sigPartyName} numberOfLines={1}>
+                {trade?.buyer?.full_name || 'طارق ہول سیل خریدار'}
+              </Text>
+
+              <View style={styles.sigStatusPill}>
+                {buyerConfirmed ? (
+                  <View style={styles.pillConfirmed}>
+                    <CheckCircle2 size={12} color="#047857" />
+                    <Text style={styles.pillTextConfirmed}>دستخط شدہ • Signed</Text>
+                  </View>
+                ) : (
+                  <View style={styles.pillPending}>
+                    <Clock size={12} color="#B45309" />
+                    <Text style={styles.pillTextPending}>زیرِ التواء • Pending</Text>
+                  </View>
+                )}
+              </View>
             </View>
 
+            {/* Seller Box */}
+            <View style={[styles.sigBox, sellerConfirmed ? styles.sigBoxConfirmed : styles.sigBoxPending]}>
+              <View style={styles.sigBoxHeader}>
+                <Text style={styles.sigRole}>فروخت کنندہ (Seller)</Text>
+                {currentRole === 'seller' && (
+                  <View style={styles.youBadge}>
+                    <Text style={styles.youBadgeText}>آپ • You</Text>
+                  </View>
+                )}
+              </View>
+
+              <Text style={styles.sigPartyName} numberOfLines={1}>
+                {trade?.seller?.full_name || 'چوہدری احمد کسان'}
+              </Text>
+
+              <View style={styles.sigStatusPill}>
+                {sellerConfirmed ? (
+                  <View style={styles.pillConfirmed}>
+                    <CheckCircle2 size={12} color="#047857" />
+                    <Text style={styles.pillTextConfirmed}>دستخط شدہ • Signed</Text>
+                  </View>
+                ) : (
+                  <View style={styles.pillPending}>
+                    <Clock size={12} color="#B45309" />
+                    <Text style={styles.pillTextPending}>زیرِ التواء • Pending</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* 3. High-Clarity Contract Summary Table (One Consolidated Card) */}
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryCardHeader}>
+            <FileText size={16} color="#15803D" />
+            <Text style={styles.summaryCardTitle}>طے شدہ شرائط کا خلاصہ • Contract Summary</Text>
+          </View>
+
+          {/* Row 1: Item */}
+          <View style={styles.tableRow}>
+            <Text style={styles.colLabel}>فصل / جنس (Produce)</Text>
+            <Text style={styles.colValue}>{productName}</Text>
+          </View>
+
+          {/* Row 2: Quantity */}
+          <View style={styles.tableRow}>
+            <Text style={styles.colLabel}>مقدار و وزن (Quantity)</Text>
+            <Text style={styles.colValue}>{quantity}</Text>
+          </View>
+
+          {/* Row 3: Unit Rate */}
+          <View style={styles.tableRow}>
+            <Text style={styles.colLabel}>قیمت فی من (Unit Rate)</Text>
+            <Text style={styles.colValue}>{pricePerUnit}</Text>
+          </View>
+
+          {/* Row 4: Total Value Highlight */}
+          <View style={[styles.tableRow, styles.totalHighlightRow]}>
+            <Text style={styles.totalLabel}>کل مالیت (Total Amount)</Text>
+            <Text style={styles.totalValue}>PKR {totalAmount}</Text>
+          </View>
+
+          {/* Row 5: Logistics */}
+          <View style={styles.tableRow}>
+            <Text style={styles.colLabel}>ڈیلیوری مقام (Location)</Text>
+            <Text style={styles.colValue}>{deliveryLocation}</Text>
+          </View>
+
+          {/* Row 6: Delivery Date */}
+          <View style={styles.tableRow}>
+            <Text style={styles.colLabel}>ترسیل کی تاریخ (Date)</Text>
+            <Text style={styles.colValue}>{deliveryDate}</Text>
+          </View>
+
+          {/* Row 7: Payment */}
+          <View style={[styles.tableRow, { borderBottomWidth: 0 }]}>
+            <Text style={styles.colLabel}>ادائیگی (Payment Method)</Text>
+            <Text style={styles.colValue}>{paymentMethod}</Text>
+          </View>
+        </View>
+
+        {/* 4. Discrete Demo Simulator (Only if waiting for second party) */}
+        {currentConfirmed && !bothConfirmed && (
+          <View style={styles.demoBox}>
+            <View style={styles.demoLeft}>
+              <Sparkles size={14} color="#0F766E" />
+              <Text style={styles.demoText}>
+                ٹیسٹنگ ڈیمو: دوسرے فریق ({otherRoleName}) کی توثیق درج کریں
+              </Text>
+            </View>
             <TouchableOpacity
-              style={styles.demoSimulateBtn}
+              style={styles.demoBtn}
               onPress={handleSimulateOtherParty}
               disabled={simulating}
-              activeOpacity={0.85}
+              activeOpacity={0.8}
             >
               {simulating ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
-                  <UserCheck size={16} color="#FFFFFF" />
-                  <Text style={styles.demoSimulateBtnText}>
-                    دوسرے فریق ({otherRoleName}) کی توثیق سمیولیٹ کریں
-                  </Text>
+                  <UserCheck size={14} color="#FFFFFF" />
+                  <Text style={styles.demoBtnText}>توثیق سمیولیٹ کریں</Text>
                 </>
               )}
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Contract Terms Sections */}
-        <View style={[styles.sectionHeadingWrapper, { marginTop: 12 }]}>
-          <Text style={styles.sectionHeadingTitle}>معاہدے کی طے شدہ شرائط • Agreed Terms</Text>
-          <Text style={styles.sectionHeadingSub}>
-            تجارتی گفتگو سے اخذ کردہ تصدیق شدہ شرائط
-          </Text>
-        </View>
-
-        {SECTIONS.map((section) => (
-          <AgreementSectionCard
-            key={section.key}
-            title={section.titleUrdu}
-            subtitle={section.titleEng}
-            icon={section.icon}
-          >
-            {section.fields.map((field) => renderTermRow(field))}
-          </AgreementSectionCard>
-        ))}
-
-        {/* Action Controls */}
+        {/* 5. Clean Action Controls */}
         <View style={styles.actionContainer}>
           {bothConfirmed ? (
             <TouchableOpacity
-              style={styles.finalDocBtn}
+              style={styles.primaryBtn}
               onPress={handleAction}
               activeOpacity={0.85}
             >
               <FileCheck size={18} color="#FFFFFF" />
-              <View style={styles.btnTextCol}>
-                <Text style={styles.finalDocBtnTitle}>حتمی معاہدہ دستاویز دیکھیں</Text>
-                <Text style={styles.finalDocBtnSub}>View Official Executed Agreement</Text>
-              </View>
+              <Text style={styles.primaryBtnText}>حتمی معاہدہ دستاویز دیکھیں • View Agreement</Text>
             </TouchableOpacity>
           ) : !currentConfirmed ? (
             <TouchableOpacity
-              style={styles.confirmBtn}
+              style={styles.primaryBtn}
               onPress={handleAction}
               activeOpacity={0.85}
             >
               <ShieldCheck size={18} color="#FFFFFF" />
-              <View style={styles.btnTextCol}>
-                <Text style={styles.confirmBtnTitle}>شرائط کی منظوری و بائیو میٹرک تصدیق</Text>
-                <Text style={styles.confirmBtnSub}>Verify Biometric Identity & Sign Contract</Text>
-              </View>
+              <Text style={styles.primaryBtnText}>بائیو میٹرک اسکین و توثیق کریں • Verify & Sign</Text>
             </TouchableOpacity>
           ) : (
-            <View style={styles.waitingActionBox}>
-              <Clock size={18} color="#B45309" />
-              <View style={styles.waitingTextCol}>
-                <Text style={styles.waitingActionText}>
-                  دوسرے فریق ({otherRoleName}) کی توثیق کا انتظار ہے...
-                </Text>
-                <Text style={styles.waitingActionSub}>
-                  Awaiting Counterparty Verification to finalize contract
-                </Text>
-              </View>
+            <View style={styles.waitingNotice}>
+              <Clock size={16} color="#B45309" />
+              <Text style={styles.waitingNoticeText}>
+                دوسرے فریق ({otherRoleName}) کی توثیق کا انتظار ہے...
+              </Text>
             </View>
           )}
 
           <TouchableOpacity
-            style={styles.chatReturnBtn}
+            style={styles.backLink}
             onPress={() => router.push(`/trade/${tradeId}` as any)}
             activeOpacity={0.7}
           >
-            <ArrowLeft size={16} color="#15803D" />
-            <Text style={styles.chatReturnText}>واپس تجارتی چیٹ پر جائیں • Return to Trade Chat</Text>
+            <ArrowLeft size={15} color="#15803D" />
+            <Text style={styles.backLinkText}>واپس تجارتی چیٹ پر جائیں • Return to Chat</Text>
           </TouchableOpacity>
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -522,456 +478,328 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 50,
+    paddingBottom: 40,
   },
+
+  // Header Card
   headerCard: {
     backgroundColor: '#FFFFFF',
     padding: 16,
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     marginBottom: 14,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
   },
   headerTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 6,
+    marginBottom: 10,
   },
-  headerTitleCol: {
+  headerTitleGroup: {
     flex: 1,
-    marginRight: 8,
   },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  headerTitle: {
-    fontSize: 17,
+  headerMainTitle: {
+    fontSize: 18,
     fontWeight: '800',
     color: '#0F172A',
   },
-  headerSubtitleEng: {
-    fontSize: 11,
-    fontWeight: '600',
+  headerSubTitle: {
+    fontSize: 12,
     color: '#64748B',
     marginTop: 2,
+    fontWeight: '500',
   },
-  tradeIdBadge: {
+  tradeTag: {
     backgroundColor: '#F1F5F9',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
-  tradeIdText: {
+  tradeTagText: {
     fontSize: 11,
     fontWeight: '700',
     color: '#475569',
   },
-  headerDescUrdu: {
-    fontSize: 12,
-    color: '#334155',
-    marginTop: 4,
-    lineHeight: 18,
+  statusBanner: {
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    paddingTop: 10,
   },
-  currentRoleBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  currentRoleLeft: {
+  statusRowConfirmed: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
-  currentRoleBarText: {
+  statusTextConfirmed: {
     fontSize: 12,
-    color: '#334155',
-  },
-  boldRoleText: {
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  rolePillConfirmed: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-  },
-  rolePillTextConfirmed: {
-    fontSize: 10,
     fontWeight: '700',
     color: '#047857',
   },
-  rolePillPending: {
+  statusRowPending: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  rolePillTextPending: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#B45309',
-  },
-
-  // Corporate Status Banners (No Emojis)
-  bannerConfirmed: {
-    flexDirection: 'row',
-    backgroundColor: '#F0FDF4',
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    marginBottom: 14,
-    gap: 12,
-    alignItems: 'flex-start',
-  },
-  bannerIconBoxConfirmed: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: '#DCFCE7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#86EFAC',
-  },
-  bannerTitleConfirmed: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#065F46',
-  },
-  bannerSubEngConfirmed: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#047857',
-    marginTop: 1,
-  },
-  bannerDescConfirmed: {
-    fontSize: 11,
-    color: '#065F46',
-    marginTop: 4,
-    lineHeight: 17,
-  },
-
-  bannerPending: {
-    flexDirection: 'row',
+    gap: 6,
     backgroundColor: '#FFFBEB',
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    marginBottom: 14,
-    gap: 12,
-    alignItems: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
-  bannerIconBoxPending: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: '#FEF3C7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#FCD34D',
-  },
-  bannerTitlePending: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#92400E',
-  },
-  bannerSubEngPending: {
-    fontSize: 11,
-    fontWeight: '600',
+  statusTextPending: {
+    fontSize: 12,
+    fontWeight: '700',
     color: '#B45309',
-    marginTop: 1,
   },
-  bannerDescPending: {
-    fontSize: 11,
-    color: '#78350F',
-    marginTop: 4,
-    lineHeight: 17,
-  },
-
-  bannerInitial: {
+  statusRowAction: {
     flexDirection: 'row',
-    backgroundColor: '#F0FDFA',
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#99F6E4',
-    marginBottom: 14,
-    gap: 12,
-    alignItems: 'flex-start',
-  },
-  bannerIconBoxInitial: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: '#CCFBF1',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#5EEAD4',
+    gap: 6,
+    backgroundColor: '#F0FDFA',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
-  bannerTitleInitial: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#115E59',
-  },
-  bannerSubEngInitial: {
-    fontSize: 11,
-    fontWeight: '600',
+  statusTextAction: {
+    fontSize: 12,
+    fontWeight: '700',
     color: '#0F766E',
-    marginTop: 1,
-  },
-  bannerDescInitial: {
-    fontSize: 11,
-    color: '#134E4A',
-    marginTop: 4,
-    lineHeight: 17,
-  },
-  bannerContent: {
-    flex: 1,
   },
 
-  sectionHeadingWrapper: {
-    marginBottom: 8,
-    marginTop: 2,
+  // Section
+  sectionContainer: {
+    marginBottom: 14,
   },
-  sectionHeadingTitle: {
+  sectionTitle: {
     fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  sectionHeadingSub: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 1,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 8,
   },
 
-  confirmationRow: {
+  // Signatures Row
+  signaturesRow: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 12,
+  },
+  sigBox: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    justifyContent: 'space-between',
+    minHeight: 92,
+  },
+  sigBoxConfirmed: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#A7F3D0',
+  },
+  sigBoxPending: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+  },
+  sigBoxHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  sigRole: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  youBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+  },
+  youBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#15803D',
+  },
+  sigPartyName: {
+    fontSize: 11,
+    color: '#475569',
+    marginBottom: 6,
+  },
+  sigStatusPill: {
+    marginTop: 'auto',
+  },
+  pillConfirmed: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  pillTextConfirmed: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#047857',
+  },
+  pillPending: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  pillTextPending: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#B45309',
   },
 
-  // Demo Simulation Drawer
-  demoSimulateCard: {
+  // Contract Summary Table
+  summaryCard: {
     backgroundColor: '#FFFFFF',
-    padding: 14,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    padding: 14,
     marginBottom: 14,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
   },
-  demoHeaderRow: {
+  summaryCardHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    marginBottom: 10,
+    alignItems: 'center',
+    gap: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 8,
+    marginBottom: 4,
   },
-  demoIconBox: {
-    width: 26,
-    height: 26,
-    borderRadius: 6,
+  summaryCardTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F8FAFC',
+  },
+  colLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+    flex: 1,
+  },
+  colValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+    textAlign: 'right',
+    flex: 1.2,
+  },
+  totalHighlightRow: {
+    backgroundColor: '#F0FDF4',
+    marginHorizontal: -14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  totalLabel: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#166534',
+  },
+  totalValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#15803D',
+    textAlign: 'right',
+  },
+
+  // Demo Simulator Drawer
+  demoBox: {
     backgroundColor: '#F0FDFA',
     borderWidth: 1,
     borderColor: '#CCFBF1',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 14,
+    gap: 8,
   },
-  demoTitleCol: {
+  demoLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  demoText: {
+    fontSize: 11,
+    color: '#0F766E',
+    fontWeight: '600',
     flex: 1,
   },
-  demoTitle: {
+  demoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#0F766E',
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  demoBtnText: {
+    color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontWeight: '700',
   },
-  demoDesc: {
-    fontSize: 11,
-    color: '#475569',
-    lineHeight: 16,
-    marginTop: 2,
+
+  // Bottom Actions
+  actionContainer: {
+    gap: 10,
+    marginTop: 4,
   },
-  demoSimulateBtn: {
+  primaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#0F766E',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-  },
-  demoSimulateBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  // Term Rows
-  termRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  termInfo: {
-    flex: 1,
-    gap: 2,
-    marginRight: 8,
-  },
-  termLabelUrdu: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#334155',
-  },
-  termLabelEng: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#64748B',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  termValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginTop: 2,
-  },
-
-  // Action Buttons
-  actionContainer: {
-    marginTop: 16,
-    marginBottom: 20,
-    gap: 10,
-  },
-  finalDocBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
     backgroundColor: '#15803D',
     paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    shadowColor: '#15803D',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: 10,
   },
-  confirmBtn: {
+  primaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  waitingNotice: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    backgroundColor: '#15803D',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    shadowColor: '#15803D',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  btnTextCol: {
-    alignItems: 'center',
-  },
-  finalDocBtnTitle: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  finalDocBtnSub: {
-    color: '#DCFCE7',
-    fontSize: 10,
-    fontWeight: '600',
-    marginTop: 1,
-  },
-  confirmBtnTitle: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  confirmBtnSub: {
-    color: '#DCFCE7',
-    fontSize: 10,
-    fontWeight: '600',
-    marginTop: 1,
-  },
-  waitingActionBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
+    gap: 6,
     backgroundColor: '#FFFBEB',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#FDE68A',
+    paddingVertical: 12,
+    borderRadius: 10,
   },
-  waitingTextCol: {
-    alignItems: 'center',
-  },
-  waitingActionText: {
-    color: '#92400E',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  waitingActionSub: {
+  waitingNoticeText: {
+    fontSize: 12,
+    fontWeight: '700',
     color: '#B45309',
-    fontSize: 10,
-    fontWeight: '600',
-    marginTop: 1,
   },
-  chatReturnBtn: {
+  backLink: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
     gap: 6,
+    paddingVertical: 10,
   },
-  chatReturnText: {
+  backLinkText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#15803D',
   },
 });
