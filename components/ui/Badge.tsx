@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { CheckCircle2, Clock, AlertCircle, AlertTriangle } from 'lucide-react-native';
 import { TermStatus } from '@/types/database';
+import { useLanguage } from '@/services/i18n/languageContext';
 
 interface BadgeProps {
   status: TermStatus | string;
@@ -11,6 +12,8 @@ interface BadgeProps {
 }
 
 export const Badge: React.FC<BadgeProps> = ({ status, label, style, showIcon = true }) => {
+  const { isUrdu } = useLanguage();
+
   const getBadgeConfig = () => {
     switch (status) {
       case 'agreed':
@@ -20,7 +23,7 @@ export const Badge: React.FC<BadgeProps> = ({ status, label, style, showIcon = t
           border: '#A7F3D0',
           text: '#065F46',
           icon: <CheckCircle2 size={11} color="#059669" />,
-          defaultLabel: 'باہمی طے شدہ • Agreed',
+          defaultLabel: isUrdu ? 'طے شدہ' : 'Agreed',
         };
       case 'proposed':
       case 'negotiating':
@@ -29,7 +32,7 @@ export const Badge: React.FC<BadgeProps> = ({ status, label, style, showIcon = t
           border: '#FDE68A',
           text: '#92400E',
           icon: <Clock size={11} color="#D97706" />,
-          defaultLabel: 'زیرِ بحث • Proposed',
+          defaultLabel: isUrdu ? 'زیرِ بحث' : 'Negotiating',
         };
       case 'missing':
         return {
@@ -37,7 +40,7 @@ export const Badge: React.FC<BadgeProps> = ({ status, label, style, showIcon = t
           border: '#FECACA',
           text: '#991B1B',
           icon: <AlertCircle size={11} color="#DC2626" />,
-          defaultLabel: 'درکار • Missing',
+          defaultLabel: isUrdu ? 'درکار' : 'Required',
         };
       case 'conflicting':
         return {
@@ -45,7 +48,7 @@ export const Badge: React.FC<BadgeProps> = ({ status, label, style, showIcon = t
           border: '#FECACA',
           text: '#991B1B',
           icon: <AlertTriangle size={11} color="#DC2626" />,
-          defaultLabel: 'تضاد • Conflict',
+          defaultLabel: isUrdu ? 'تضاد' : 'Conflict',
         };
       case 'rejected':
         return {
@@ -53,7 +56,7 @@ export const Badge: React.FC<BadgeProps> = ({ status, label, style, showIcon = t
           border: '#E2E8F0',
           text: '#475569',
           icon: <AlertCircle size={11} color="#64748B" />,
-          defaultLabel: 'مسترد • Rejected',
+          defaultLabel: isUrdu ? 'مسترد' : 'Rejected',
         };
       default:
         return {

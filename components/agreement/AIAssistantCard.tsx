@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { AgreementTerm } from '@/types/database';
-import { KNOWN_AGREEMENT_FIELDS } from '@/types/agreement';
+import { KNOWN_AGREEMENT_FIELDS, getAgreementFieldLabel } from '@/types/agreement';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { TermItem } from './TermItem';
 import { SuggestedQuestions } from './SuggestedQuestions';
 import { Bot, ChevronDown, ChevronUp, AlertCircle, CheckCircle2, AlertTriangle, FileText, Clock } from 'lucide-react-native';
+import { useLanguage } from '@/services/i18n/languageContext';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -30,6 +31,7 @@ export const AIAssistantCard: React.FC<AIAssistantCardProps> = ({
   onSelectQuestion,
   onReviewAgreement,
 }) => {
+  const { t, isUrdu } = useLanguage();
   const [collapsed, setCollapsed] = useState(false);
 
   const toggleCollapse = () => {
@@ -60,35 +62,43 @@ export const AIAssistantCard: React.FC<AIAssistantCardProps> = ({
       <TouchableOpacity style={styles.header} onPress={toggleCollapse} activeOpacity={0.8}>
         <View style={styles.headerLeft}>
           <Bot size={22} color="#1b4332" />
-          <Text style={styles.headerTitle}>AgroEndure Agreement Assistant</Text>
+          <Text style={styles.headerTitle}>{t('trade.aiCopilotTitle')}</Text>
         </View>
         {collapsed ? <ChevronDown size={20} color="#1b4332" /> : <ChevronUp size={20} color="#1b4332" />}
       </TouchableOpacity>
 
       {!collapsed && (
         <View style={styles.body}>
-          <ProgressBar progress={progressPercentage} label="Agreement Completeness" />
+          <ProgressBar progress={progressPercentage} label={t('trade.completeness')} />
 
           {/* CONFLICTING TERMS ALERT */}
           {conflictingTerms.length > 0 && (
             <View style={styles.conflictBox}>
               <View style={styles.conflictHeader}>
                 <AlertCircle size={18} color="#842029" />
-                <Text style={styles.conflictTitle}>CONFLICT DETECTED</Text>
+                <Text style={styles.conflictTitle}>{t('trade.conflictDetected')}</Text>
               </View>
               {conflictingTerms.map((t) => (
                 <View key={t.id} style={styles.conflictItem}>
                   <Text style={styles.conflictField}>
-                    {KNOWN_AGREEMENT_FIELDS[t.field_name] || t.field_name}
+                    {getAgreementFieldLabel(t.field_name, isUrdu)}
                   </Text>
-                  <Text style={styles.conflictDetail}>Current Candidate Value: {String(t.value)}</Text>
+                  <Text style={styles.conflictDetail}>
+                    {isUrdu ? 'موجودہ تجویز کردہ قیمت / قدر:' : 'Current Candidate Value:'} {String(t.value)}
+                  </Text>
                 </View>
               ))}
               <TouchableOpacity
                 style={styles.confirmActionBtn}
-                onPress={() => onSelectQuestion('Please confirm the final delivery location.')}
+                onPress={() =>
+                  onSelectQuestion(
+                    isUrdu
+                      ? 'براہ کرم فائنل ڈیلیوری مقام اور شرائط کی تصدیق کریں۔'
+                      : 'Please confirm the final delivery location.'
+                  )
+                }
               >
-                <Text style={styles.confirmActionText}>Ask Both Users to Confirm</Text>
+                <Text style={styles.confirmActionText}>{t('trade.askBothConfirm')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -98,7 +108,7 @@ export const AIAssistantCard: React.FC<AIAssistantCardProps> = ({
             <View style={styles.section}>
               <View style={styles.sectionTitleRow}>
                 <CheckCircle2 size={15} color="#0F5132" />
-                <Text style={[styles.sectionTitle, { color: '#0F5132' }]}>AGREED TERMS</Text>
+                <Text style={[styles.sectionTitle, { color: '#0F5132' }]}>{t('trade.agreedTerms')}</Text>
               </View>
               {agreedTerms.map((t) => (
                 <TermItem key={t.id} term={t} />
@@ -111,7 +121,7 @@ export const AIAssistantCard: React.FC<AIAssistantCardProps> = ({
             <View style={styles.section}>
               <View style={styles.sectionTitleRow}>
                 <Clock size={15} color="#B45309" />
-                <Text style={[styles.sectionTitle, { color: '#92400E' }]}>PENDING / UNDER DISCUSSION</Text>
+                <Text style={[styles.sectionTitle, { color: '#92400E' }]}>{t('trade.pendingTerms')}</Text>
               </View>
               {pendingTerms.map((t) => (
                 <TermItem key={t.id} term={t} />
@@ -124,11 +134,11 @@ export const AIAssistantCard: React.FC<AIAssistantCardProps> = ({
             <View style={styles.section}>
               <View style={styles.sectionTitleRow}>
                 <AlertTriangle size={15} color="#991B1B" />
-                <Text style={[styles.sectionTitle, { color: '#991B1B' }]}>REQUIRED INFORMATION</Text>
+                <Text style={[styles.sectionTitle, { color: '#991B1B' }]}>{t('trade.requiredInfo')}</Text>
               </View>
               {actualMissingFields.map((field, idx) => (
                 <View key={idx} style={styles.missingRow}>
-                  <Text style={styles.missingText}>{KNOWN_AGREEMENT_FIELDS[field] || field}</Text>
+                  <Text style={styles.missingText}>{getAgreementFieldLabel(field, isUrdu)}</Text>
                 </View>
               ))}
             </View>
@@ -141,9 +151,7 @@ export const AIAssistantCard: React.FC<AIAssistantCardProps> = ({
           {(progressPercentage >= 60 || agreedTerms.length >= 3) && onReviewAgreement && (
             <TouchableOpacity style={styles.reviewBtn} onPress={onReviewAgreement} activeOpacity={0.85}>
               <FileText size={18} color="#FFFFFF" />
-              <Text style={styles.reviewBtnText}>
-                معاہدہ تیار کریں (Generate Agreement) →
-              </Text>
+              <Text style={styles.reviewBtnText}>{t('trade.finalizeAndReview')} →</Text>
             </TouchableOpacity>
           )}
         </View>

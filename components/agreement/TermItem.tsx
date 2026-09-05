@@ -1,16 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { AgreementTerm } from '@/types/database';
-import { KNOWN_AGREEMENT_FIELDS } from '@/types/agreement';
+import { getAgreementFieldLabel } from '@/types/agreement';
 import { Badge } from '@/components/ui/Badge';
 import { CheckCircle2, AlertTriangle, Clock, AlertCircle } from 'lucide-react-native';
+import { useLanguage } from '@/services/i18n/languageContext';
 
 interface TermItemProps {
   term: AgreementTerm;
 }
 
 export const TermItem: React.FC<TermItemProps> = ({ term }) => {
-  const fieldLabel = KNOWN_AGREEMENT_FIELDS[term.field_name] || term.field_name;
+  const { isUrdu } = useLanguage();
+  const fieldLabel = getAgreementFieldLabel(term.field_name, isUrdu);
 
   const renderIcon = () => {
     switch (term.status) {
@@ -70,6 +72,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#0F172A',
-    marginTop: 1,
+    marginTop: 2,
   },
 });

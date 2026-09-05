@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { Colors, FontSize, Spacing, Radius } from '@/constants/theme';
+import { useLanguage } from '@/services/i18n/languageContext';
 
 interface WizardStepIndicatorProps {
   currentStep: number; // 1: Crop, 2: Quantity, 3: Quality, 4: Photos, 5: Price
@@ -9,13 +10,14 @@ interface WizardStepIndicatorProps {
 
 const STEPS = [
   { id: 1, label: 'فصل', en: 'Crop' },
-  { id: 2, label: 'مقدار', en: 'Qty' },
+  { id: 2, label: 'مقدار', en: 'Quantity' },
   { id: 3, label: 'کوالٹی', en: 'Quality' },
   { id: 4, label: 'تصاویر', en: 'Photos' },
   { id: 5, label: 'قیمت', en: 'Price' },
 ];
 
 export const WizardStepIndicator: React.FC<WizardStepIndicatorProps> = ({ currentStep }) => {
+  const { isUrdu } = useLanguage();
   const currentStepData = STEPS.find((s) => s.id === currentStep) || STEPS[0];
 
   return (
@@ -23,10 +25,12 @@ export const WizardStepIndicator: React.FC<WizardStepIndicatorProps> = ({ curren
       {/* Top step counter title */}
       <View style={styles.headerRow}>
         <View style={styles.stepBadge}>
-          <Text style={styles.stepBadgeText}>مرحلہ {currentStep} از 5</Text>
+          <Text style={styles.stepBadgeText}>
+            {isUrdu ? `مرحلہ ${currentStep} از 5` : `Step ${currentStep} of 5`}
+          </Text>
         </View>
         <Text style={styles.stepCurrentTitle}>
-          {currentStepData.label} ({currentStepData.en})
+          {isUrdu ? currentStepData.label : currentStepData.en}
         </Text>
       </View>
 
@@ -66,7 +70,7 @@ export const WizardStepIndicator: React.FC<WizardStepIndicatorProps> = ({ curren
                     isDone && styles.stepLabelDone,
                   ]}
                 >
-                  {step.label}
+                  {isUrdu ? step.label : step.en}
                 </Text>
               </View>
 

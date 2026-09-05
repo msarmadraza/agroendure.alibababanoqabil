@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Clock, MapPin, Star, Volume2 } from 'lucide-react-native';
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
+import { useLanguage } from '@/services/i18n/languageContext';
 
 interface CropCardProps {
   id: string;
@@ -36,6 +37,8 @@ export const CropCard = ({
   onViewDetails,
   onPlayVoice,
 }: CropCardProps) => {
+  const { isUrdu } = useLanguage();
+
   return (
     <TouchableOpacity
       activeOpacity={0.9}
@@ -53,7 +56,9 @@ export const CropCard = ({
             { backgroundColor: isAvailable ? Colors.success : Colors.error },
           ]}
         >
-          <Text style={styles.statusText}>{isAvailable ? 'دستیاب' : 'فروخت'}</Text>
+          <Text style={styles.statusText}>
+            {isAvailable ? (isUrdu ? 'دستیاب' : 'Available') : (isUrdu ? 'فروخت' : 'Sold')}
+          </Text>
         </View>
 
         {/* Voice Description Button */}
@@ -114,7 +119,7 @@ export const CropCard = ({
         </View>
       </View>
 
-      {/* Action Button - Only بولی لگائیں */}
+      {/* Action Button */}
       <View style={styles.actions}>
         <TouchableOpacity
           style={styles.primaryButton}
@@ -123,7 +128,9 @@ export const CropCard = ({
             onViewDetails?.(id);
           }}
         >
-          <Text style={styles.primaryButtonText}>بولی لگائیں</Text>
+          <Text style={styles.primaryButtonText}>
+            {isUrdu ? 'بولی لگائیں' : 'Place Bid'}
+          </Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>

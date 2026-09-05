@@ -3,12 +3,14 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DemoAuthProvider } from '@/services/auth/demoAuthContext';
 import { OnboardingProvider } from '@/services/auth/onboardingContext';
+import { LanguageProvider } from '@/services/i18n/languageContext';
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <DemoAuthProvider>
-        <OnboardingProvider>
+      <LanguageProvider>
+        <DemoAuthProvider>
+          <OnboardingProvider>
           <StatusBar style="dark" />
           <Stack
             screenOptions={{
@@ -37,6 +39,7 @@ export default function RootLayout() {
           </Stack>
         </OnboardingProvider>
       </DemoAuthProvider>
-    </SafeAreaProvider>
-  );
+    </LanguageProvider>
+  </SafeAreaProvider>
+);
 }

@@ -25,12 +25,14 @@ import { listingToCropCard, CropCardView } from '@/services/marketplace/listingA
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
 import { useDemoAuth } from '@/services/auth/demoAuthContext';
 import { fetchUserTrades } from '@/services/trade/tradeService';
+import { useLanguage } from '@/services/i18n/languageContext';
+import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
 
 export default function Dashboard() {
   const router = useRouter();
   const { activeUser, activeRole } = useDemoAuth();
+  const { t, isUrdu } = useLanguage();
   const [isRecording, setIsRecording] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState('ur');
   const [recentCrops, setRecentCrops] = useState<CropCardView[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
   const [activeListingsCount, setActiveListingsCount] = useState(0);
@@ -70,9 +72,24 @@ export default function Dashboard() {
   }, [loadRecentListings]);
 
   const marketPrices = [
-    { crop: 'گندم', price: 'PKR 85,000/من', change: '+2.5%', up: true },
-    { crop: 'چاول', price: 'PKR 120,000/من', change: '-1.2%', up: false },
-    { crop: 'کپاس', price: 'PKR 95,000/man', change: '+5.8%', up: true },
+    {
+      crop: isUrdu ? 'گندم' : 'Wheat',
+      price: isUrdu ? 'PKR 85,000/من' : 'PKR 85,000/Mann',
+      change: '+2.5%',
+      up: true,
+    },
+    {
+      crop: isUrdu ? 'چاول' : 'Rice',
+      price: isUrdu ? 'PKR 120,000/من' : 'PKR 120,000/Mann',
+      change: '-1.2%',
+      up: false,
+    },
+    {
+      crop: isUrdu ? 'کپاس' : 'Cotton',
+      price: isUrdu ? 'PKR 95,000/من' : 'PKR 95,000/Mann',
+      change: '+5.8%',
+      up: true,
+    },
   ];
 
   return (
@@ -89,13 +106,15 @@ export default function Dashboard() {
               style={styles.logo}
               resizeMode="contain"
             />
-            <Text style={styles.greeting}>السلام علیکم، احمد! آپ کی فصل کی معلومات</Text>
+            <Text style={styles.greeting}>
+              {isUrdu
+                ? 'السلام علیکم، احمد! آپ کی فصل کی معلومات'
+                : 'Welcome back, Ahmad! Mandi Overview'}
+            </Text>
           </View>
 
           <View style={styles.headerRight}>
-            <View style={styles.picker}>
-              <Text style={styles.pickerText}>اردو</Text>
-            </View>
+            <LanguageSwitcherButton />
             <TouchableOpacity style={styles.iconButton}>
               <Bell size={20} color={Colors.foreground} />
               <View style={styles.notificationDot} />
@@ -105,8 +124,8 @@ export default function Dashboard() {
 
         {/* Voice Recording Section */}
         <View style={styles.voiceSection}>
-          <Text style={styles.voiceTitle}>آواز سے فصل کی فہرست بنائیں</Text>
-          <Text style={styles.voiceSubtitle}>بٹن دبائیں اور اپنی فصل کے بارے میں بتائیں</Text>
+          <Text style={styles.voiceTitle}>{t('home.voiceListingTitle')}</Text>
+          <Text style={styles.voiceSubtitle}>{t('home.voiceListingSub')}</Text>
 
           <VoiceButton
             isRecording={isRecording}
@@ -119,14 +138,14 @@ export default function Dashboard() {
           />
 
           {isRecording && (
-            <Text style={styles.recordingText}>سن رہا ہے... اپنی فصل کے بارے میں بتائیں</Text>
+            <Text style={styles.recordingText}>{t('home.listeningVoice')}</Text>
           )}
         </View>
 
         {/* Dashboard Metrics */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {activeRole === 'seller' ? 'فارمر ڈیش بورڈ' : 'ڈیش بورڈ'}
+            {activeRole === 'seller' ? t('home.farmerDashboard') : t('home.buyerDashboard')}
           </Text>
           <View style={styles.metricsRow}>
             <View style={[styles.metricCard, Shadows.soft]}>
@@ -136,7 +155,7 @@ export default function Dashboard() {
               <Text style={styles.metricValue}>
                 {String(activeListingsCount).padStart(2, '0')}
               </Text>
-              <Text style={styles.metricLabel}>Active Listings</Text>
+              <Text style={styles.metricLabel}>{t('home.activeListings')}</Text>
             </View>
 
             <View style={[styles.metricCard, Shadows.soft]}>
@@ -146,14 +165,14 @@ export default function Dashboard() {
               <Text style={styles.metricValue}>
                 {String(activeNegotiationsCount).padStart(2, '0')}
               </Text>
-              <Text style={styles.metricLabel}>Active Negotiations</Text>
+              <Text style={styles.metricLabel}>{t('home.activeNegotiations')}</Text>
             </View>
 
             <View style={[styles.metricCard, Shadows.soft]}>
               <View style={styles.metricIconWrapper}>
                 <Flame size={16} color={Colors.primary} />
               </View>
-              <Text style={styles.metricLabel}>Top Active Bid</Text>
+              <Text style={styles.metricLabel}>{t('home.topActiveBid')}</Text>
               <Text style={styles.metricBidValue}>
                 {topActiveBid > 0
                   ? `PKR ${topActiveBid.toLocaleString()}`
@@ -166,7 +185,7 @@ export default function Dashboard() {
         {/* Market Prices Ticker */}
         <View style={[styles.card, Shadows.soft]}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>آج کی قیمتیں</Text>
+            <Text style={styles.cardTitle}>{t('home.todayPrices')}</Text>
             <TrendingUp size={16} color={Colors.primary} />
           </View>
           <View style={styles.priceList}>
@@ -199,9 +218,9 @@ export default function Dashboard() {
         {/* Recent Listings */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>حالیہ فہرست</Text>
+            <Text style={styles.sectionTitle}>{t('home.recentListings')}</Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/browse')}>
-              <Text style={styles.seeAll}>سب دیکھیں</Text>
+              <Text style={styles.seeAll}>{t('home.seeAll')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -228,14 +247,14 @@ export default function Dashboard() {
           <View>
             <View style={styles.weatherLocation}>
               <Cloud size={20} color={Colors.white} />
-              <Text style={styles.weatherCity}>فیصل آباد</Text>
+              <Text style={styles.weatherCity}>{t('home.weatherCity')}</Text>
             </View>
             <Text style={styles.weatherTemp}>28°C</Text>
-            <Text style={styles.weatherCondition}>صاف موسم</Text>
+            <Text style={styles.weatherCondition}>{t('home.weatherCondition')}</Text>
           </View>
           <View style={styles.weatherDetails}>
-            <Text style={styles.weatherDetailText}>نمی: 65%</Text>
-            <Text style={styles.weatherDetailText}>ہوا: 12 کلو میٹر/گھنٹہ</Text>
+            <Text style={styles.weatherDetailText}>{t('home.humidity')}: 65%</Text>
+            <Text style={styles.weatherDetailText}>{t('home.wind')}: 12 {t('home.windUnit')}</Text>
           </View>
         </View>
       </ScrollView>

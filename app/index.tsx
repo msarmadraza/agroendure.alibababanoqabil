@@ -37,6 +37,9 @@ import {
   ScanFace,
   UploadCloud,
   Sparkles,
+  Sun,
+  Glasses,
+  UserCheck,
 } from 'lucide-react-native';
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
 import { useDemoAuth } from '@/services/auth/demoAuthContext';
@@ -659,13 +662,16 @@ export default function OnboardingFlow() {
           {/* Guidance Chips */}
           <View style={styles.guidanceChipsRow}>
             <View style={styles.guidanceChip}>
-              <Text style={styles.guidanceChipText}>☀️ مناسب روشنی</Text>
+              <Sun size={13} color={Colors.primary} />
+              <Text style={styles.guidanceChipText}>مناسب روشنی • Good Light</Text>
             </View>
             <View style={styles.guidanceChip}>
-              <Text style={styles.guidanceChipText}>👓 عینک اتار لیں</Text>
+              <Glasses size={13} color={Colors.primary} />
+              <Text style={styles.guidanceChipText}>عینک اتار لیں • No Glasses</Text>
             </View>
             <View style={styles.guidanceChip}>
-              <Text style={styles.guidanceChipText}>👤 سامنے دیکھیں</Text>
+              <UserCheck size={13} color={Colors.primary} />
+              <Text style={styles.guidanceChipText}>سامنے دیکھیں • Look Ahead</Text>
             </View>
           </View>
 
@@ -1326,6 +1332,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   guidanceChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: Colors.secondary,
     paddingHorizontal: 10,
     paddingVertical: 5,

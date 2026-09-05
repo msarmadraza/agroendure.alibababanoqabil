@@ -27,6 +27,8 @@ import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
 import { useDemoAuth } from '@/services/auth/demoAuthContext';
 import { useOnboarding } from '@/services/auth/onboardingContext';
 import { verifyUserForTrade } from '@/services/verification/faceVerificationService';
+import { useLanguage } from '@/services/i18n/languageContext';
+import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
 
 export default function FaceVerificationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,13 +36,16 @@ export default function FaceVerificationScreen() {
 
   const { activeUser, activeRole } = useDemoAuth();
   const { data: onboardingData } = useOnboarding();
+  const { t, isUrdu } = useLanguage();
 
   // If user already took a selfie during account onboarding, preload it, otherwise start empty
   const [facePhotoUri, setFacePhotoUri] = useState<string | null>(
     onboardingData?.facePhotoUri || activeUser?.avatar_url || null
   );
   const [scanning, setScanning] = useState(false);
-  const [stepText, setStepText] = useState('چہرہ فریم کے اندر سیدھا رکھیں • Position face inside frame');
+  const [stepText, setStepText] = useState(
+    isUrdu ? 'چہرہ فریم کے اندر سیدھا رکھیں' : 'Position face inside the frame'
+  );
   const [success, setSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -123,23 +128,35 @@ export default function FaceVerificationScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Top Header Bar */}
+      <View style={styles.topNav}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          activeOpacity={0.7}
+        >
+          <ArrowLeft size={20} color="#1b4332" />
+        </TouchableOpacity>
+        <LanguageSwitcherButton compact />
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header Section */}
         <View style={styles.header}>
           <View style={styles.headerIconCircle}>
             <ScanFace size={30} color={Colors.primary} />
           </View>
-          <Text style={styles.title}>بائیو میٹرک فیس ویری فکیشن</Text>
-          <Text style={styles.subtitleEng}>Biometric Face & Identity Verification</Text>
-          <Text style={styles.subtitleUrdu}>
-            معاہدے کی حتمی ڈیجیٹل توثیق اور سیکیورٹی کے لیے چہرے کی لائیو تصدیق لازمی ہے۔
-          </Text>
+          <Text style={styles.title}>{t('verification.faceTitle')}</Text>
+          <Text style={styles.subtitleEng}>{t('verification.faceSubtitle')}</Text>
+          <Text style={styles.subtitleUrdu}>{t('verification.faceDesc')}</Text>
 
           {/* Trade Info Badge */}
           <View style={styles.tradeBadge}>
             <Sparkles size={13} color={Colors.primary} />
             <Text style={styles.tradeBadgeText}>
-              معاہدہ #{tradeId} • {userName} ({activeRole === 'seller' ? 'بیچنے والا' : 'خریدار'})
+              {isUrdu
+                ? `معاہدہ #${tradeId} • ${userName} (${activeRole === 'seller' ? 'بیچنے والا' : 'خریدار'})`
+                : `Trade #${tradeId} • ${userName} (${activeRole === 'seller' ? 'Seller' : 'Buyer'})`}
             </Text>
           </View>
         </View>
@@ -151,21 +168,25 @@ export default function FaceVerificationScreen() {
               <Image source={{ uri: facePhotoUri }} style={styles.faceImage} />
               <View style={styles.faceVerifiedBadge}>
                 <CheckCircle2 size={16} color={Colors.white} />
-                <Text style={styles.faceVerifiedBadgeText}>تصویر تیار ہے • Photo Ready</Text>
+                <Text style={styles.faceVerifiedBadgeText}>{t('verification.photoReady')}</Text>
               </View>
             </View>
 
             {scanning ? (
               <View style={[styles.processingCard, Shadows.soft]}>
                 <ActivityIndicator size="large" color={Colors.primary} />
-                <Text style={styles.processingTitle}>Supabase سے چہرے کی تصدیق ہو رہی ہے...</Text>
-                <Text style={styles.processingSub}>Uploading to secure Supabase storage & verifying identity</Text>
+                <Text style={styles.processingTitle}>{t('verification.verifying')}</Text>
+                <Text style={styles.processingSub}>
+                  {isUrdu
+                    ? 'محفوظ سرور پر چہرے کی تصدیق اور لائیو نیس چیک ہو رہی ہے...'
+                    : 'Uploading to secure storage & verifying biometric identity'}
+                </Text>
               </View>
             ) : success ? (
               <View style={[styles.successCard, Shadows.soft]}>
                 <CheckCircle2 size={42} color={Colors.success} />
-                <Text style={styles.successTitle}>بائیو میٹرک تصدیق کامیاب! 🎉</Text>
-                <Text style={styles.successSub}>معاہدے کی ڈیجیٹل توثیق مکمل ہو گئی ہے۔ منتقل کیا جا رہا ہے...</Text>
+                <Text style={styles.successTitle}>{t('verification.successTitle')}</Text>
+                <Text style={styles.successSub}>{t('verification.successSub')}</Text>
               </View>
             ) : (
               <View style={styles.actionRow}>
@@ -175,7 +196,7 @@ export default function FaceVerificationScreen() {
                   activeOpacity={0.85}
                 >
                   <RefreshCw size={18} color={Colors.foreground} />
-                  <Text style={styles.secondaryButtonText}>دوبارہ لیں • Retake</Text>
+                  <Text style={styles.secondaryButtonText}>{t('verification.retake')}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -184,7 +205,7 @@ export default function FaceVerificationScreen() {
                   activeOpacity={0.88}
                 >
                   <CheckCircle2 size={18} color={Colors.white} strokeWidth={2.5} />
-                  <Text style={styles.primaryButtonText}>تصدیق اور معاہدہ مکمل کریں</Text>
+                  <Text style={styles.primaryButtonText}>{t('verification.verifyBtn')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -212,13 +233,13 @@ export default function FaceVerificationScreen() {
             {/* Guidance Chips */}
             <View style={styles.guidanceChipsRow}>
               <View style={styles.guidanceChip}>
-                <Text style={styles.guidanceChipText}>☀️ مناسب روشنی</Text>
+                <Text style={styles.guidanceChipText}>{t('verification.adequateLight')}</Text>
               </View>
               <View style={styles.guidanceChip}>
-                <Text style={styles.guidanceChipText}>👓 عینک اتار لیں</Text>
+                <Text style={styles.guidanceChipText}>{t('verification.removeGlasses')}</Text>
               </View>
               <View style={styles.guidanceChip}>
-                <Text style={styles.guidanceChipText}>👤 سامنے دیکھیں</Text>
+                <Text style={styles.guidanceChipText}>{t('verification.lookStraight')}</Text>
               </View>
             </View>
 
@@ -236,7 +257,7 @@ export default function FaceVerificationScreen() {
                 activeOpacity={0.88}
               >
                 <Camera size={22} color={Colors.white} />
-                <Text style={styles.primaryButtonText}>کیمرہ کھولیں اور سیلفی لیں • Take Selfie</Text>
+                <Text style={styles.primaryButtonText}>{t('verification.takePhoto')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -245,7 +266,7 @@ export default function FaceVerificationScreen() {
                 activeOpacity={0.85}
               >
                 <UploadCloud size={20} color={Colors.primary} />
-                <Text style={styles.outlineUploadButtonText}>گیلری سے تصویر منتخب کریں • Choose from Gallery</Text>
+                <Text style={styles.outlineUploadButtonText}>{t('verification.chooseGallery')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -259,13 +280,17 @@ export default function FaceVerificationScreen() {
             activeOpacity={0.7}
           >
             <ArrowLeft size={16} color={Colors.mutedForeground} />
-            <Text style={styles.cancelText}>واپس معاہدے پر جائیں (Cancel & Return)</Text>
+            <Text style={styles.cancelText}>
+              {isUrdu ? 'واپس معاہدے پر جائیں' : 'Cancel & Return to Agreement'}
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.footerNote}>
             <Lock size={14} color={Colors.mutedForeground} />
             <Text style={styles.footerText}>
-              256-bit انکرپٹڈ • بائیو میٹرک ڈیٹا Supabase کلاؤڈ پر مکمل محفوظ ہے
+              {isUrdu
+                ? '256-bit انکرپٹڈ • بائیو میٹرک ڈیٹا کلاؤڈ پر مکمل محفوظ ہے'
+                : '256-bit Encrypted • Biometric data securely stored & signed'}
             </Text>
           </View>
         </View>
@@ -278,6 +303,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+  },
+  topNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  backButton: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
   },
   scrollContent: {
     padding: Spacing.xl,

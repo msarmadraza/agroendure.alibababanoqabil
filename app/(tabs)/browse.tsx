@@ -15,9 +15,12 @@ import { CropCard } from '@/components/CropCard';
 import { fetchListings } from '@/services/marketplace/listingService';
 import { listingToCropCard, CropCardView } from '@/services/marketplace/listingAdapter';
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
+import { useLanguage } from '@/services/i18n/languageContext';
+import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
 
 export default function CropBrowser() {
   const router = useRouter();
+  const { t, isUrdu } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
@@ -41,18 +44,18 @@ export default function CropBrowser() {
   }, [loadListings]);
 
   const categories = [
-    { id: 'all', name: 'تمام', count: 156 },
-    { id: 'grains', name: 'اناج', count: 89 },
-    { id: 'vegetables', name: 'سبزیاں', count: 42 },
-    { id: 'fruits', name: 'پھل', count: 25 },
+    { id: 'all', name: t('browse.allCategories'), count: 156 },
+    { id: 'grains', name: t('browse.grains'), count: 89 },
+    { id: 'vegetables', name: t('browse.vegetables'), count: 42 },
+    { id: 'fruits', name: t('browse.fruits'), count: 25 },
   ];
 
   const locations = [
-    { id: 'all', name: 'تمام علاقے' },
-    { id: 'faisalabad', name: 'فیصل آباد' },
-    { id: 'lahore', name: 'لاہور' },
-    { id: 'multan', name: 'ملتان' },
-    { id: 'sialkot', name: 'سیالکوٹ' },
+    { id: 'all', name: t('browse.allRegions') },
+    { id: 'faisalabad', name: isUrdu ? 'فیصل آباد' : 'Faisalabad' },
+    { id: 'lahore', name: isUrdu ? 'لاہور' : 'Lahore' },
+    { id: 'multan', name: isUrdu ? 'ملتان' : 'Multan' },
+    { id: 'sialkot', name: isUrdu ? 'سیالکوٹ' : 'Sialkot' },
   ];
 
   // Live search filter over fetched listings (DB + locally created + demo)
@@ -74,8 +77,9 @@ export default function CropBrowser() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>فصل تلاش کریں</Text>
+          <Text style={styles.title}>{t('browse.title')}</Text>
           <View style={styles.headerActions}>
+            <LanguageSwitcherButton compact />
             <TouchableOpacity
               style={styles.iconButton}
               onPress={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
@@ -103,7 +107,7 @@ export default function CropBrowser() {
             style={styles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="فصل، کسان یا علاقہ تلاش کریں..."
+            placeholder={t('browse.searchPlaceholder')}
             placeholderTextColor={Colors.mutedForeground}
           />
         </View>
@@ -146,10 +150,10 @@ export default function CropBrowser() {
         {/* Filters Panel */}
         {showFilters && (
           <View style={[styles.card, Shadows.soft]}>
-            <Text style={styles.filterTitle}>فلٹرز</Text>
+            <Text style={styles.filterTitle}>{t('browse.filters')}</Text>
 
             <View style={styles.filterField}>
-              <Text style={styles.filterLabel}>علاقہ</Text>
+              <Text style={styles.filterLabel}>{t('browse.region')}</Text>
               <View style={styles.select}>
                 <Text style={styles.selectText}>
                   {locations.find((l) => l.id === selectedLocation)?.name}
@@ -158,18 +162,18 @@ export default function CropBrowser() {
             </View>
 
             <View style={styles.filterField}>
-              <Text style={styles.filterLabel}>قیمت (PKR)</Text>
+              <Text style={styles.filterLabel}>{t('browse.priceRange')}</Text>
               <View style={styles.priceRange}>
                 <TextInput
                   style={styles.priceInput}
-                  placeholder="کم سے کم"
+                  placeholder={t('browse.minPrice')}
                   placeholderTextColor={Colors.mutedForeground}
                   keyboardType="number-pad"
                 />
-                <Text style={styles.priceSeparator}>سے</Text>
+                <Text style={styles.priceSeparator}>{t('browse.priceTo')}</Text>
                 <TextInput
                   style={styles.priceInput}
-                  placeholder="زیادہ سے زیادہ"
+                  placeholder={t('browse.maxPrice')}
                   placeholderTextColor={Colors.mutedForeground}
                   keyboardType="number-pad"
                 />
@@ -177,7 +181,7 @@ export default function CropBrowser() {
             </View>
 
             <TouchableOpacity style={styles.applyButton}>
-              <Text style={styles.applyButtonText}>فلٹرز لگائیں</Text>
+              <Text style={styles.applyButtonText}>{t('browse.applyFilters')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -185,11 +189,11 @@ export default function CropBrowser() {
         {/* Results Header */}
         <View style={styles.resultsHeader}>
           <Text style={styles.resultsText}>
-            {isLoading ? 'لوڈ ہو رہا ہے...' : `${filteredCrops.length} فصلیں ملیں`}
+            {isLoading ? t('common.loading') : `${filteredCrops.length} ${t('browse.cropsFound')}`}
           </Text>
           <View style={styles.nearby}>
             <MapPin size={14} color={Colors.mutedForeground} />
-            <Text style={styles.nearbyText}>آپ کے قریب</Text>
+            <Text style={styles.nearbyText}>{t('browse.nearYou')}</Text>
           </View>
         </View>
 
@@ -197,7 +201,9 @@ export default function CropBrowser() {
         {isLoading ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color={Colors.primary} />
-            <Text style={styles.loadingText}>لسٹنگز لوڈ ہو رہی ہیں...</Text>
+            <Text style={styles.loadingText}>
+              {isUrdu ? 'لسٹنگز لوڈ ہو رہی ہیں...' : 'Loading crop listings...'}
+            </Text>
           </View>
         ) : (
           <View style={styles.listings}>
@@ -215,7 +221,7 @@ export default function CropBrowser() {
         {/* Load More / Refresh */}
         <TouchableOpacity style={styles.loadMore} onPress={loadListings}>
           <Text style={styles.loadMoreText}>
-            {isLoading ? 'لوڈ ہو رہا ہے...' : 'تازہ کریں'}
+            {isLoading ? t('common.loading') : t('browse.refresh')}
           </Text>
         </TouchableOpacity>
       </ScrollView>

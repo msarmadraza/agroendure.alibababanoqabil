@@ -62,3 +62,42 @@ export const KNOWN_AGREEMENT_FIELDS: Record<string, string> = {
   special_conditions: 'Special Conditions',
   additional_notes: 'Additional Notes',
 };
+
+export const KNOWN_AGREEMENT_FIELDS_URDU: Record<string, string> = {
+  product_name: 'فصل / جنس کا نام',
+  product_category: 'کیٹیگری',
+  variety: 'ورائٹی / قسم',
+  quantity: 'کل مقدار',
+  quantity_unit: 'یونٹ',
+  quality: 'کوالٹی',
+  grade: 'گریڈ',
+  packaging: 'پیکنگ',
+  price_per_unit: 'قیمت فی من',
+  total_price: 'کل مالیت',
+  currency: 'کرنسی',
+  taxes: 'ٹیکسز',
+  additional_charges: 'اضافی اخراجات',
+  delivery_location: 'ڈیلیوری مقام',
+  delivery_address: 'مکمل پتہ',
+  delivery_date: 'ترسیل کی تاریخ',
+  delivery_time: 'ڈیلیوری وقت',
+  transportation_responsibility: 'ٹرانسپورٹ ذمہ داری',
+  transportation_cost_responsibility: 'کرایہ اخراجات',
+  payment_method: 'طریقہ ادائیگی',
+  advance_payment: 'ایڈوانس ادائیگی',
+  advance_payment_amount: 'ایڈوانس رقم',
+  remaining_payment: 'بقیہ رقم',
+  payment_due_date: 'ادائیگی کی تاریخ',
+  inspection_terms: 'معائنہ شرائط',
+  cancellation_terms: 'منسوخی کی شرائط',
+  dispute_resolution: 'تنازعات کا حل',
+  special_conditions: 'خصوصی شرائط',
+  additional_notes: 'اضافی نوٹس',
+};
+
+export function getAgreementFieldLabel(field: string, isUrdu: boolean): string {
+  if (isUrdu && KNOWN_AGREEMENT_FIELDS_URDU[field]) {
+    return KNOWN_AGREEMENT_FIELDS_URDU[field];
+  }
+  return KNOWN_AGREEMENT_FIELDS[field] || field;
+}

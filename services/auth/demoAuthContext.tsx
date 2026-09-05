@@ -33,6 +33,7 @@ interface DemoAuthContextType {
   isDemo: boolean;
   isDemoSeller: boolean;
   toggleRole: () => void;
+  setUserRole: (role: 'buyer' | 'seller') => void;
   realUser: any | null;
   realProfile: Profile | null;
   loading: boolean;
@@ -45,6 +46,7 @@ const DemoAuthContext = createContext<DemoAuthContextType>({
   isDemo: true,
   isDemoSeller: false,
   toggleRole: () => {},
+  setUserRole: () => {},
   realUser: null,
   realProfile: null,
   loading: true,
@@ -111,6 +113,12 @@ export function DemoAuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const setUserRole = (role: 'buyer' | 'seller') => {
+    if (!realProfile) {
+      setIsDemoSeller(role === 'seller');
+    }
+  };
+
   return (
     <DemoAuthContext.Provider
       value={{
@@ -119,6 +127,7 @@ export function DemoAuthProvider({ children }: { children: ReactNode }) {
         isDemo,
         isDemoSeller,
         toggleRole,
+        setUserRole,
         realUser,
         realProfile,
         loading,

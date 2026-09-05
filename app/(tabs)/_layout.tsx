@@ -8,6 +8,7 @@ import {
   User,
 } from 'lucide-react-native';
 import { Colors, Spacing, Radius, FontSize } from '@/constants/theme';
+import { useLanguage } from '@/services/i18n/languageContext';
 
 function TabIcon({
   icon: Icon,
@@ -55,6 +56,8 @@ function TabIcon({
 }
 
 export default function TabsLayout() {
+  const { t } = useLanguage();
+
   return (
     <Tabs
       screenOptions={{
@@ -67,7 +70,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon icon={Home} label="گھر" focused={focused} />
+            <TabIcon icon={Home} label={t('tabs.home')} focused={focused} />
           ),
         }}
       />
@@ -75,7 +78,7 @@ export default function TabsLayout() {
         name="browse"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon icon={Search} label="تلاش" focused={focused} />
+            <TabIcon icon={Search} label={t('tabs.browse')} focused={focused} />
           ),
         }}
       />
@@ -83,7 +86,7 @@ export default function TabsLayout() {
         name="add"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon icon={Plus} label="شامل" focused={focused} isAdd />
+            <TabIcon icon={Plus} label={t('tabs.add')} focused={focused} isAdd />
           ),
         }}
       />
@@ -91,7 +94,7 @@ export default function TabsLayout() {
         name="messages"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon icon={MessageCircle} label="پیغامات" focused={focused} badge={3} />
+            <TabIcon icon={MessageCircle} label={t('tabs.messages')} focused={focused} badge={3} />
           ),
         }}
       />
@@ -99,7 +102,7 @@ export default function TabsLayout() {
         name="profile"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon icon={User} label="پروفائل" focused={focused} />
+            <TabIcon icon={User} label={t('tabs.profile')} focused={focused} />
           ),
         }}
       />

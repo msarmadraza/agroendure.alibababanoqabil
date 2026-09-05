@@ -40,6 +40,8 @@ import {
 } from '@/types/listingWizard';
 import { Listing } from '@/types/database';
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
+import { useLanguage } from '@/services/i18n/languageContext';
+import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
 
 // Urdu questions + English hints shown for each AI step
 const AI_STEPS = [
@@ -69,6 +71,7 @@ const AI_STEPS = [
 export default function VoiceListing() {
   const router = useRouter();
   const { activeUser } = useDemoAuth();
+  const { t, isUrdu } = useLanguage();
 
   const [step, setStep] = useState(1); // 1: Crop, 2: Quantity, 3: Quality, 4: Photos, 5: Price & Publish
   const [inputText, setInputText] = useState('');
@@ -240,10 +243,13 @@ export default function VoiceListing() {
     <View style={[styles.aiHeader, Shadows.soft]}>
       <View style={styles.aiBadgePill}>
         <Sparkles size={13} color={Colors.primary} />
-        <Text style={styles.aiBadgeText}>AGROENDURE AI اسسٹنٹ</Text>
+        <Text style={styles.aiBadgeText}>
+          {isUrdu ? 'ایگرو اینڈیور AI اسسٹنٹ' : 'AgroEndure AI Assistant'}
+        </Text>
       </View>
-      <Text style={styles.stepTitleUrdu}>{AI_STEPS[stepIdx].titleUrdu}</Text>
-      <Text style={styles.stepTitleEng}>{AI_STEPS[stepIdx].titleEng}</Text>
+      <Text style={styles.stepTitleUrdu}>
+        {isUrdu ? AI_STEPS[stepIdx].titleUrdu : AI_STEPS[stepIdx].titleEng}
+      </Text>
     </View>
   );
 
@@ -251,7 +257,9 @@ export default function VoiceListing() {
     <View style={styles.textSection}>
       <View style={styles.orDivider}>
         <View style={styles.line} />
-        <Text style={styles.orText}>یا کی بورڈ سے لکھیں (Type Below)</Text>
+        <Text style={styles.orText}>
+          {isUrdu ? 'یا کی بورڈ سے لکھیں' : 'Or type with keyboard'}
+        </Text>
         <View style={styles.line} />
       </View>
 
@@ -303,10 +311,10 @@ export default function VoiceListing() {
           <DetectionCard
             title={
               stepIdx === 0
-                ? '🌾 فصل کی تفصیل'
+                ? (isUrdu ? 'فصل کی تفصیل' : 'Crop Details')
                 : stepIdx === 1
-                ? '📦 مقدار اور پیمانہ'
-                : '⭐ کوالٹی گریڈ'
+                ? (isUrdu ? 'مقدار اور پیمانہ' : 'Quantity & Units')
+                : (isUrdu ? 'کوالٹی گریڈ' : 'Quality Grade')
             }
             detectedValue={response.display_value ?? ''}
             originalText={
@@ -443,7 +451,9 @@ export default function VoiceListing() {
 
         <View style={styles.marketInsightBox}>
           <Text style={styles.priceHint}>
-            💡 مارکیٹ میں اس کوالٹی کی اوسط قیمتوں کے تجزیے سے یہ ریٹ تجویز کیا گیا ہے۔ آپ اپنی مرضی سے اسے بدل سکتے ہیں۔
+            {isUrdu
+              ? 'مارکیٹ میں اس کوالٹی کی اوسط قیمتوں کے تجزیے سے یہ ریٹ تجویز کیا گیا ہے۔ آپ اپنی مرضی سے اسے بدل سکتے ہیں۔'
+              : 'This benchmark rate is suggested based on current market trends. You can adjust it as needed.'}
           </Text>
         </View>
       </View>
@@ -470,7 +480,7 @@ export default function VoiceListing() {
           ) : (
             <>
               <CheckCircle2 size={18} color={Colors.white} strokeWidth={2.5} />
-              <Text style={styles.publishButtonText}>لسٹنگ پبلش کریں 🚀</Text>
+              <Text style={styles.publishButtonText}>{t('addCrop.submitBtn')}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -488,13 +498,11 @@ export default function VoiceListing() {
               <CheckCircle2 size={54} color={Colors.primary} strokeWidth={2.5} />
             </View>
 
-            <Text style={styles.successTitle}>آپ کی فصل لائیو ہو گئی! 🎉</Text>
-            <Text style={styles.successSub}>
-              آپ کی لسٹنگ کامیابی سے مارکیٹ پلیس میں شامل کر دی گئی ہے اور اب تمام خریداروں کو نظر آ رہی ہے۔
-            </Text>
+            <Text style={styles.successTitle}>{t('addCrop.successTitle')}</Text>
+            <Text style={styles.successSub}>{t('addCrop.successSub')}</Text>
 
             <View style={styles.successSummaryBox}>
-              <Text style={styles.summaryItemTitle}>🌾 {cropName || 'فصل'}</Text>
+              <Text style={styles.summaryItemTitle}>{cropName || (isUrdu ? 'فصل' : 'Crop')}</Text>
               <View style={styles.summaryBadgesRow}>
                 <View style={styles.summaryTag}>
                   <Text style={styles.summaryTagText}>{quantityStr || `${quantityNum} ${quantityUnit}`}</Text>
@@ -503,7 +511,7 @@ export default function VoiceListing() {
                   <Text style={styles.summaryTagText}>{qualityStr || 'Grade A'}</Text>
                 </View>
                 <View style={[styles.summaryTag, styles.summaryPriceTag]}>
-                  <Text style={styles.summaryPriceTagText}>Rs {price} / {quantityUnit}</Text>
+                  <Text style={styles.summaryPriceTagText}>PKR {price} / {quantityUnit}</Text>
                 </View>
               </View>
             </View>
@@ -513,7 +521,9 @@ export default function VoiceListing() {
               onPress={() => router.replace('/(tabs)/browse')}
               activeOpacity={0.85}
             >
-              <Text style={styles.successBtnText}>مارکیٹ پلیس میں دیکھیں</Text>
+              <Text style={styles.successBtnText}>
+                {isUrdu ? 'مارکیٹ پلیس میں دیکھیں' : 'View in Marketplace'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -534,7 +544,9 @@ export default function VoiceListing() {
               }}
               activeOpacity={0.7}
             >
-              <Text style={styles.newListingBtnText}>+ نئی فصل کی لسٹنگ بنائیں</Text>
+              <Text style={styles.newListingBtnText}>
+                {isUrdu ? '+ نئی فصل کی لسٹنگ بنائیں' : '+ Create New Crop Listing'}
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -544,6 +556,10 @@ export default function VoiceListing() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.topHeaderBar}>
+        <Text style={styles.topHeaderTitle}>{t('addCrop.title')}</Text>
+        <LanguageSwitcherButton compact />
+      </View>
       <WizardStepIndicator currentStep={step} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -564,6 +580,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+  },
+  topHeaderBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xs,
+  },
+  topHeaderTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: '800',
+    color: '#0F172A',
   },
   scrollContent: {
     padding: Spacing.lg,

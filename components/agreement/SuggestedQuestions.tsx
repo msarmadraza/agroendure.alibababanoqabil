@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { MessageSquarePlus } from 'lucide-react-native';
+import { MessageSquarePlus, Sparkles } from 'lucide-react-native';
+import { useLanguage } from '@/services/i18n/languageContext';
 
 interface SuggestedQuestionsProps {
   questions: string[];
@@ -11,11 +12,19 @@ export const SuggestedQuestions: React.FC<SuggestedQuestionsProps> = ({
   questions,
   onSelectQuestion,
 }) => {
+  const { isUrdu } = useLanguage();
   if (!questions || questions.length === 0) return null;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerTitle}>💡 Suggested Questions to complete agreement:</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+        <Sparkles size={14} color="#2d6a4f" />
+        <Text style={styles.headerTitle}>
+          {isUrdu
+            ? 'معاہدہ مکمل کرنے کے لیے تجاویز:'
+            : 'Suggested Questions to complete agreement:'}
+        </Text>
+      </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {questions.map((question, index) => (
           <TouchableOpacity

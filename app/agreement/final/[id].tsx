@@ -15,7 +15,9 @@ import { Agreement, AgreementTerm, Trade } from '@/types/database';
 import { fetchTradeById, fetchAgreementTerms } from '@/services/trade/tradeService';
 import { finalizeAndGenerateAgreement, generateAgreementHTML } from '@/services/agreement/documentService';
 import { Button } from '@/components/ui/Button';
-import { CheckCircle2, ShieldCheck, FileText, Download, ArrowLeft, X, Printer } from 'lucide-react-native';
+import { useLanguage } from '@/services/i18n/languageContext';
+import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
+import { CheckCircle2, ShieldCheck, FileText, ArrowLeft, X } from 'lucide-react-native';
 
 export default function FinalAgreementScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -91,76 +93,95 @@ export default function FinalAgreementScreen() {
   const delDate = agreement?.agreement_data?.deliveryDate || terms.find(t => t.field_name === 'delivery_date')?.value || '10 September 2026';
   const payMethod = agreement?.agreement_data?.paymentMethod || terms.find(t => t.field_name === 'payment_method')?.value || 'Bank Transfer';
 
+  const { isUrdu } = useLanguage();
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {/* LANGUAGE SWITCHER */}
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <LanguageSwitcherButton compact />
+      </View>
+
       {/* SUCCESS HEADER BANNER */}
       <View style={styles.successBanner}>
-        <CheckCircle2 size={36} color="#0F5132" />
-        <Text style={styles.bannerTitle}>Transaction Agreement Confirmed!</Text>
+        <CheckCircle2 size={32} color="#0F5132" />
+        <Text style={styles.bannerTitle}>
+          {isUrdu ? 'تجارتی معاہدہ باضابطہ تصدیق شدہ' : 'Transaction Agreement Confirmed!'}
+        </Text>
         <Text style={styles.bannerSub}>
-          Both parties have biometrically verified and digitally confirmed all transaction terms.
+          {isUrdu
+            ? 'دونوں فریقین نے بائیو میٹرک توثیق مکمل کر کے تمام شرائط منظور کر لی ہیں۔'
+            : 'Both parties have biometrically verified and digitally confirmed all transaction terms.'}
         </Text>
       </View>
 
       {/* AGREEMENT DETAILS CARD */}
       <View style={styles.card}>
         <View style={styles.row}>
-          <Text style={styles.label}>Agreement Number:</Text>
+          <Text style={styles.label}>{isUrdu ? 'معاہدہ نمبر:' : 'Agreement Number:'}</Text>
           <Text style={styles.badgeText}>{agrNumber}</Text>
         </View>
 
         <View style={styles.row}>
-          <Text style={styles.label}>Status:</Text>
+          <Text style={styles.label}>{isUrdu ? 'حیثیت:' : 'Status:'}</Text>
           <View style={styles.statusBadge}>
             <ShieldCheck size={14} color="#0F5132" />
-            <Text style={styles.statusText}>Digitally Locked & Confirmed</Text>
+            <Text style={styles.statusText}>
+              {isUrdu ? 'ڈیجیٹل طور پر مصدقہ و لاک' : 'Digitally Locked & Confirmed'}
+            </Text>
           </View>
         </View>
 
         <View style={styles.divider} />
 
         <View style={styles.row}>
-          <Text style={styles.label}>Buyer Confirmation:</Text>
-          <Text style={styles.confirmText}>✓ Confirmed ({new Date().toLocaleDateString()})</Text>
+          <Text style={styles.label}>{isUrdu ? 'خریدار کی توثیق:' : 'Buyer Confirmation:'}</Text>
+          <Text style={styles.confirmText}>
+            {isUrdu ? '✓ تصدیق شدہ' : '✓ Confirmed'} ({new Date().toLocaleDateString()})
+          </Text>
         </View>
 
         <View style={styles.row}>
-          <Text style={styles.label}>Seller Confirmation:</Text>
-          <Text style={styles.confirmText}>✓ Confirmed ({new Date().toLocaleDateString()})</Text>
+          <Text style={styles.label}>{isUrdu ? 'فروخت کنندہ کی توثیق:' : 'Seller Confirmation:'}</Text>
+          <Text style={styles.confirmText}>
+            {isUrdu ? '✓ تصدیق شدہ' : '✓ Confirmed'} ({new Date().toLocaleDateString()})
+          </Text>
         </View>
       </View>
 
       {/* AGREED SUMMARY CARD */}
       <View style={styles.card}>
-        <Text style={styles.cardSectionTitle}>Agreed Terms Summary</Text>
+        <Text style={styles.cardSectionTitle}>
+          {isUrdu ? 'طے شدہ شرائط کا خلاصہ' : 'Agreed Terms Summary'}
+        </Text>
 
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Product:</Text>
+          <Text style={styles.summaryLabel}>{isUrdu ? 'فصل / جنس:' : 'Product:'}</Text>
           <Text style={styles.summaryVal}>{prodName}</Text>
         </View>
 
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Quantity:</Text>
+          <Text style={styles.summaryLabel}>{isUrdu ? 'مقدار:' : 'Quantity:'}</Text>
           <Text style={styles.summaryVal}>{qty}</Text>
         </View>
 
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Price:</Text>
+          <Text style={styles.summaryLabel}>{isUrdu ? 'قیمت:' : 'Price:'}</Text>
           <Text style={styles.summaryVal}>{price}</Text>
         </View>
 
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Delivery Location:</Text>
+          <Text style={styles.summaryLabel}>{isUrdu ? 'ڈیلیوری مقام:' : 'Delivery Location:'}</Text>
           <Text style={styles.summaryVal}>{loc}</Text>
         </View>
 
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Delivery Date:</Text>
+          <Text style={styles.summaryLabel}>{isUrdu ? 'ترسیل کی تاریخ:' : 'Delivery Date:'}</Text>
           <Text style={styles.summaryVal}>{delDate}</Text>
         </View>
 
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Payment Method:</Text>
+          <Text style={styles.summaryLabel}>{isUrdu ? 'طریقہ ادائیگی:' : 'Payment Method:'}</Text>
           <Text style={styles.summaryVal}>{payMethod}</Text>
         </View>
       </View>
@@ -168,7 +189,7 @@ export default function FinalAgreementScreen() {
       {/* ACTION BUTTONS */}
       <View style={styles.actionGroup}>
         <Button
-          title="View / Download Agreement Document"
+          title={isUrdu ? 'معاہدہ دستاویز ڈاؤن لوڈ / پرنٹ کریں' : 'View / Download Agreement Document'}
           onPress={handleOpenDocument}
           icon={<FileText size={18} color="#FFFFFF" />}
           style={styles.downloadBtn}
@@ -176,7 +197,9 @@ export default function FinalAgreementScreen() {
 
         <TouchableOpacity style={styles.returnBtn} onPress={() => router.push('/(tabs)/messages')}>
           <ArrowLeft size={16} color="#1b4332" />
-          <Text style={styles.returnText}>پیغامات اور تجارتی لسٹ پر واپس جائیں (Return to Messages)</Text>
+          <Text style={styles.returnText}>
+            {isUrdu ? 'پیغامات پر واپس جائیں' : 'Return to Messages'}
+          </Text>
         </TouchableOpacity>
       </View>
 

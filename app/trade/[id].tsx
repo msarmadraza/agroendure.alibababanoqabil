@@ -22,6 +22,7 @@ import {
 import { analyzeTradeConversation } from '@/services/gemini/agreementEngine';
 import { transcribeAudioMessage } from '@/services/voice/transcriptionService';
 import { useDemoAuth } from '@/services/auth/demoAuthContext';
+import { useLanguage } from '@/services/i18n/languageContext';
 import { crossTabSync } from '@/services/trade/crossTabSync';
 import {
   loadTradeMessages,
@@ -40,6 +41,7 @@ export default function TradeChatScreen() {
   const tradeId = id || 'trade-101';
 
   const { activeUser } = useDemoAuth();
+  const { t, isUrdu } = useLanguage();
   if (!activeUser) return null;
   const currentUserId = activeUser.id;
 
@@ -308,13 +310,13 @@ export default function TradeChatScreen() {
             activeOpacity={0.7}
           >
             <ArrowLeft size={18} color="#1b4332" />
-            <Text style={styles.backBtnText}>پیغامات (Back)</Text>
+            <Text style={styles.backBtnText}>{t('trade.returnToMessages')}</Text>
           </TouchableOpacity>
 
           <View style={styles.topNavCenter}>
-            <Text style={styles.topNavTitle}>تجارتی چیٹ و AI کوپائلٹ</Text>
+            <Text style={styles.topNavTitle}>{t('trade.title')}</Text>
             <Text style={styles.topNavSubtitle}>
-              {trade?.listing?.product_name || 'سپر باسمتی چاول'} • #{tradeId}
+              {trade?.listing?.product_name || (isUrdu ? 'سپر باسمتی چاول' : 'Super Basmati Rice')} • #{tradeId}
             </Text>
           </View>
 
@@ -324,7 +326,7 @@ export default function TradeChatScreen() {
             activeOpacity={0.7}
           >
             <FileText size={15} color="#1b4332" />
-            <Text style={styles.reviewNavBtnText}>معاہدے کا جائزہ</Text>
+            <Text style={styles.reviewNavBtnText}>{t('trade.reviewAgreement')}</Text>
           </TouchableOpacity>
         </View>
 

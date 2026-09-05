@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Play, Pause, Volume2 } from 'lucide-react-native';
+import { Play, Pause, Volume2, Mic } from 'lucide-react-native';
+import { useLanguage } from '@/services/i18n/languageContext';
 
 interface VoicePlayerProps {
   audioUrl: string | null;
@@ -8,6 +9,7 @@ interface VoicePlayerProps {
 }
 
 export const VoicePlayer: React.FC<VoicePlayerProps> = ({ audioUrl, transcription }) => {
+  const { isUrdu } = useLanguage();
   const [isPlaying, setIsPlaying] = useState(false);
 
   const togglePlayback = () => {
@@ -26,7 +28,7 @@ export const VoicePlayer: React.FC<VoicePlayerProps> = ({ audioUrl, transcriptio
           <View style={styles.dummyWaveform}>
             <View style={[styles.bar, { height: 12 }]} />
             <View style={[styles.bar, { height: 20 }]} />
-            <View style={[styles.bar, { height: 14 }]} />
+            <View style={[styles.bar, { height: 16 }]} />
             <View style={[styles.bar, { height: 24 }]} />
             <View style={[styles.bar, { height: 18 }]} />
             <View style={[styles.bar, { height: 10 }]} />
@@ -39,7 +41,12 @@ export const VoicePlayer: React.FC<VoicePlayerProps> = ({ audioUrl, transcriptio
 
       {transcription && (
         <View style={styles.transcriptionBox}>
-          <Text style={styles.transcriptionLabel}>🎙️ Audio Transcription:</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+            <Mic size={13} color="#2d6a4f" />
+            <Text style={styles.transcriptionLabel}>
+              {isUrdu ? 'آواز کی تحریر:' : 'Audio Transcription:'}
+            </Text>
+          </View>
           <Text style={styles.transcriptionText}>{transcription}</Text>
         </View>
       )}

@@ -25,9 +25,12 @@ import {
 } from 'lucide-react-native';
 import { VoiceButton } from '@/components/VoiceButton';
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
+import { useLanguage } from '@/services/i18n/languageContext';
+import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
 
 export default function Bidding() {
   const router = useRouter();
+  const { t, isUrdu } = useLanguage();
   const [bidAmount, setBidAmount] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
   const [customTerms, setCustomTerms] = useState('');
@@ -55,11 +58,17 @@ export default function Bidding() {
 
   const handleSubmitBid = () => {
     if (!bidAmount) {
-      Alert.alert('❌ خرابی', 'براہ کرم اپنی بولی کی رقم درج کریں');
+      Alert.alert(
+        isUrdu ? 'خرابی' : 'Error',
+        isUrdu ? 'براہ کرم اپنی بولی کی رقم درج کریں' : 'Please enter your bid amount'
+      );
       return;
     }
 
-    Alert.alert('✅ کامیاب', 'آپ کی بولی کامیابی سے جمع ہو گئی!');
+    Alert.alert(
+      isUrdu ? 'کامیاب' : 'Success',
+      isUrdu ? 'آپ کی بولی کامیابی سے جمع ہو گئی!' : 'Your bid was submitted successfully!'
+    );
     setBidSubmitted(true);
   };
 
@@ -69,7 +78,7 @@ export default function Bidding() {
         id: Date.now(),
         sender: 'buyer',
         message: newMessage,
-        time: 'ابھی',
+        time: isUrdu ? 'ابھی' : 'Just now',
         isVoice: false,
         duration: '',
       };
@@ -102,11 +111,11 @@ export default function Bidding() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft size={20} color={Colors.foreground} />
         </TouchableOpacity>
-        <View>
-          <Text style={styles.headerTitle}>بولی لگائیں</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>{isUrdu ? 'بولی لگائیں' : 'Place Bid'}</Text>
           <Text style={styles.headerSubtitle}>{cropInfo.title}</Text>
         </View>
-        <View style={styles.headerSpacer} />
+        <LanguageSwitcherButton compact />
       </View>
 
       <ScrollView
@@ -233,7 +242,9 @@ export default function Bidding() {
             disabled={!bidAmount || bidSubmitted}
           >
             <Text style={styles.submitButtonText}>
-              {bidSubmitted ? '✅ بولی جمع ہو گئی' : 'بولی جمع کریں'}
+              {bidSubmitted
+                ? (isUrdu ? 'بولی جمع ہو گئی' : 'Bid Submitted')
+                : (isUrdu ? 'بولی جمع کریں' : 'Submit Bid')}
             </Text>
           </TouchableOpacity>
 

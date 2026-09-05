@@ -23,6 +23,8 @@ import {
 } from '@/services/trade/demoTradeStore';
 import { crossTabSync } from '@/services/trade/crossTabSync';
 import { useDemoAuth } from '@/services/auth/demoAuthContext';
+import { useLanguage } from '@/services/i18n/languageContext';
+import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
 import { supabase } from '@/services/supabase/client';
 import {
   ArrowLeft,
@@ -32,7 +34,6 @@ import {
   Clock,
   UserCheck,
   FileText,
-  User,
   Sparkles,
 } from 'lucide-react-native';
 
@@ -41,10 +42,12 @@ export default function AgreementReviewScreen() {
   const tradeId = id || 'trade-101';
 
   const { activeRole } = useDemoAuth();
+  const { isUrdu } = useLanguage();
+
   const currentRole = activeRole || 'buyer';
   const otherRole = currentRole === 'buyer' ? 'seller' : 'buyer';
-  const currentRoleName = currentRole === 'buyer' ? 'خریدار (Buyer)' : 'فروخت کنندہ (Seller)';
-  const otherRoleName = otherRole === 'seller' ? 'فروخت کنندہ (Seller)' : 'خریدار (Buyer)';
+  const currentRoleName = currentRole === 'buyer' ? (isUrdu ? 'خریدار' : 'Buyer') : (isUrdu ? 'فروخت کنندہ' : 'Seller');
+  const otherRoleName = otherRole === 'seller' ? (isUrdu ? 'فروخت کنندہ' : 'Seller') : (isUrdu ? 'خریدار' : 'Buyer');
 
   const [trade, setTrade] = useState<Trade | null>(null);
   const [terms, setTerms] = useState<AgreementTerm[]>(() => loadTradeTerms(tradeId));
@@ -118,11 +121,13 @@ export default function AgreementReviewScreen() {
       }
 
       Alert.alert(
-        'تصدیق کامیاب • Verified',
-        `آپ کی بائیو میٹرک توثیق اور شرائط کی منظوری باضابطہ درج ہو چکی ہے۔`
+        isUrdu ? 'تصدیق کامیاب' : 'Verification Succeeded',
+        isUrdu
+          ? 'آپ کی بائیو میٹرک توثیق اور شرائط کی منظوری باضابطہ درج ہو چکی ہے۔'
+          : 'Your biometric verification and terms approval have been officially recorded.'
       );
     }
-  }, [faceVerified, tradeId, currentRole]);
+  }, [faceVerified, tradeId, currentRole, isUrdu]);
 
   // Safe Realtime channel subscription
   useEffect(() => {
@@ -189,8 +194,10 @@ export default function AgreementReviewScreen() {
     }
 
     Alert.alert(
-      'معاہدہ زیرِ توثیق • Awaiting Signature',
-      `آپ کی توثیق مکمل ہو چکی ہے۔ معاہدے کے قانونی نفاذ کے لیے دوسرے فریق (${otherRoleName}) کے دستخط درکار ہیں۔`
+      isUrdu ? 'معاہدہ زیرِ توثیق' : 'Awaiting Counterparty',
+      isUrdu
+        ? `آپ کی توثیق مکمل ہو چکی ہے۔ معاہدے کے قانونی نفاذ کے لیے دوسرے فریق (${otherRoleName}) کے دستخط درکار ہیں۔`
+        : `Your verification is complete. Awaiting counterparty (${otherRoleName}) signature to enact contract.`
     );
   };
 
@@ -224,12 +231,12 @@ export default function AgreementReviewScreen() {
     return t ? String(t.value) : fallback;
   };
 
-  const productName = findVal('product_name', trade?.listing?.product_name || 'سپر باسمتی چاول (Super Basmati)');
-  const quantity = findVal('quantity', '100 من (100 Mann)');
-  const pricePerUnit = findVal('price_per_unit', 'PKR 5,700 / من');
-  const deliveryLocation = findVal('delivery_location', 'لاہور (Lahore)');
-  const deliveryDate = findVal('delivery_date', '10 ستمبر 2026');
-  const paymentMethod = findVal('payment_method', 'بینک ٹرانسفر / JazzCash');
+  const productName = findVal('product_name', trade?.listing?.product_name || (isUrdu ? 'سپر باسمتی چاول' : 'Super Basmati Rice'));
+  const quantity = findVal('quantity', isUrdu ? '100 من' : '100 Mann');
+  const pricePerUnit = findVal('price_per_unit', isUrdu ? 'PKR 5,700 فی من' : 'PKR 5,700 per Mann');
+  const deliveryLocation = findVal('delivery_location', isUrdu ? 'لاہور' : 'Lahore');
+  const deliveryDate = findVal('delivery_date', isUrdu ? '10 ستمبر 2026' : '10 September 2026');
+  const paymentMethod = findVal('payment_method', isUrdu ? 'بینک ٹرانسفر / JazzCash' : 'Bank Transfer / JazzCash');
 
   // Compute total
   const parseNum = (str: string) => {
@@ -244,15 +251,23 @@ export default function AgreementReviewScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* 1. Sleek Unified Top Header */}
+        {/* 1. Sleek Unified Top Header with Universal Language Switcher */}
         <View style={styles.headerCard}>
           <View style={styles.headerTopRow}>
             <View style={styles.headerTitleGroup}>
-              <Text style={styles.headerMainTitle}>تجارتی معاہدہ</Text>
-              <Text style={styles.headerSubTitle}>Trade Agreement Review</Text>
+              <Text style={styles.headerMainTitle}>
+                {isUrdu ? 'تجارتی معاہدہ' : 'Trade Agreement'}
+              </Text>
+              <Text style={styles.headerSubTitle}>
+                {isUrdu ? 'معاہدے کا جائزہ و باہمی توثیق' : 'Terms Review & Mutual Consent'}
+              </Text>
             </View>
-            <View style={styles.tradeTag}>
-              <Text style={styles.tradeTagText}>#{tradeId}</Text>
+
+            <View style={styles.headerRightActions}>
+              <LanguageSwitcherButton compact />
+              <View style={styles.tradeTag}>
+                <Text style={styles.tradeTagText}>#{tradeId}</Text>
+              </View>
             </View>
           </View>
 
@@ -262,21 +277,27 @@ export default function AgreementReviewScreen() {
               <View style={styles.statusRowConfirmed}>
                 <ShieldCheck size={16} color="#059669" />
                 <Text style={styles.statusTextConfirmed}>
-                  باہمی معاہدہ باضابطہ طے پا گیا • Digitally Executed
+                  {isUrdu
+                    ? 'باہمی معاہدہ باضابطہ طے پا گیا • Digitally Executed'
+                    : 'Mutual Agreement Legally Executed & Digitally Locked'}
                 </Text>
               </View>
             ) : currentConfirmed ? (
               <View style={styles.statusRowPending}>
                 <Clock size={16} color="#D97706" />
                 <Text style={styles.statusTextPending}>
-                  آپ کی تصدیق مکمل • دوسرے فریق کے دستخط کا انتظار ہے
+                  {isUrdu
+                    ? `آپ کی تصدیق مکمل • دوسرے فریق (${otherRoleName}) کے دستخط کا انتظار ہے`
+                    : `Your signature is recorded • Awaiting counterparty (${otherRoleName})`}
                 </Text>
               </View>
             ) : (
               <View style={styles.statusRowAction}>
                 <FileText size={16} color="#0F766E" />
                 <Text style={styles.statusTextAction}>
-                  شرائط کا جائزہ لیں اور بائیو میٹرک توثیق مکمل کریں
+                  {isUrdu
+                    ? 'شرائط کا جائزہ لیں اور بائیو میٹرک توثیق مکمل کریں'
+                    : 'Review terms and complete biometric verification to sign'}
                 </Text>
               </View>
             )}
@@ -285,34 +306,40 @@ export default function AgreementReviewScreen() {
 
         {/* 2. Compact Symmetrical Signatures Section */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>فریقین کی ڈیجیٹل توثیق • Digital Signatures</Text>
+          <Text style={styles.sectionTitle}>
+            {isUrdu ? 'فریقین کی ڈیجیٹل توثیق' : 'Digital Signatures & Consent'}
+          </Text>
           
           <View style={styles.signaturesRow}>
             {/* Buyer Box */}
             <View style={[styles.sigBox, buyerConfirmed ? styles.sigBoxConfirmed : styles.sigBoxPending]}>
               <View style={styles.sigBoxHeader}>
-                <Text style={styles.sigRole}>خریدار (Buyer)</Text>
+                <Text style={styles.sigRole}>{isUrdu ? 'خریدار (Buyer)' : 'Buyer'}</Text>
                 {currentRole === 'buyer' && (
                   <View style={styles.youBadge}>
-                    <Text style={styles.youBadgeText}>آپ • You</Text>
+                    <Text style={styles.youBadgeText}>{isUrdu ? 'آپ' : 'You'}</Text>
                   </View>
                 )}
               </View>
 
               <Text style={styles.sigPartyName} numberOfLines={1}>
-                {trade?.buyer?.full_name || 'طارق ہول سیل خریدار'}
+                {trade?.buyer?.full_name || (isUrdu ? 'طارق ہول سیل خریدار' : 'Tariq Wholesale Buyer')}
               </Text>
 
               <View style={styles.sigStatusPill}>
                 {buyerConfirmed ? (
                   <View style={styles.pillConfirmed}>
                     <CheckCircle2 size={12} color="#047857" />
-                    <Text style={styles.pillTextConfirmed}>دستخط شدہ • Signed</Text>
+                    <Text style={styles.pillTextConfirmed}>
+                      {isUrdu ? 'دستخط شدہ' : 'Signed'}
+                    </Text>
                   </View>
                 ) : (
                   <View style={styles.pillPending}>
                     <Clock size={12} color="#B45309" />
-                    <Text style={styles.pillTextPending}>زیرِ التواء • Pending</Text>
+                    <Text style={styles.pillTextPending}>
+                      {isUrdu ? 'دستخط درکار' : 'Pending'}
+                    </Text>
                   </View>
                 )}
               </View>
@@ -321,28 +348,32 @@ export default function AgreementReviewScreen() {
             {/* Seller Box */}
             <View style={[styles.sigBox, sellerConfirmed ? styles.sigBoxConfirmed : styles.sigBoxPending]}>
               <View style={styles.sigBoxHeader}>
-                <Text style={styles.sigRole}>فروخت کنندہ (Seller)</Text>
+                <Text style={styles.sigRole}>{isUrdu ? 'فروخت کنندہ (Seller)' : 'Seller'}</Text>
                 {currentRole === 'seller' && (
                   <View style={styles.youBadge}>
-                    <Text style={styles.youBadgeText}>آپ • You</Text>
+                    <Text style={styles.youBadgeText}>{isUrdu ? 'آپ' : 'You'}</Text>
                   </View>
                 )}
               </View>
 
               <Text style={styles.sigPartyName} numberOfLines={1}>
-                {trade?.seller?.full_name || 'چوہدری احمد کسان'}
+                {trade?.seller?.full_name || (isUrdu ? 'چوہدری احمد کسان' : 'Chaudhry Ahmad')}
               </Text>
 
               <View style={styles.sigStatusPill}>
                 {sellerConfirmed ? (
                   <View style={styles.pillConfirmed}>
                     <CheckCircle2 size={12} color="#047857" />
-                    <Text style={styles.pillTextConfirmed}>دستخط شدہ • Signed</Text>
+                    <Text style={styles.pillTextConfirmed}>
+                      {isUrdu ? 'دستخط شدہ' : 'Signed'}
+                    </Text>
                   </View>
                 ) : (
                   <View style={styles.pillPending}>
                     <Clock size={12} color="#B45309" />
-                    <Text style={styles.pillTextPending}>زیرِ التواء • Pending</Text>
+                    <Text style={styles.pillTextPending}>
+                      {isUrdu ? 'دستخط درکار' : 'Pending'}
+                    </Text>
                   </View>
                 )}
               </View>
@@ -350,63 +381,67 @@ export default function AgreementReviewScreen() {
           </View>
         </View>
 
-        {/* 3. High-Clarity Contract Summary Table (One Consolidated Card) */}
+        {/* 3. High-Clarity Contract Summary Table */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryCardHeader}>
             <FileText size={16} color="#15803D" />
-            <Text style={styles.summaryCardTitle}>طے شدہ شرائط کا خلاصہ • Contract Summary</Text>
+            <Text style={styles.summaryCardTitle}>
+              {isUrdu ? 'طے شدہ شرائط کا خلاصہ' : 'Contract Terms Summary'}
+            </Text>
           </View>
 
           {/* Row 1: Item */}
           <View style={styles.tableRow}>
-            <Text style={styles.colLabel}>فصل / جنس (Produce)</Text>
+            <Text style={styles.colLabel}>{isUrdu ? 'فصل / جنس' : 'Crop / Produce'}</Text>
             <Text style={styles.colValue}>{productName}</Text>
           </View>
 
           {/* Row 2: Quantity */}
           <View style={styles.tableRow}>
-            <Text style={styles.colLabel}>مقدار و وزن (Quantity)</Text>
+            <Text style={styles.colLabel}>{isUrdu ? 'مقدار و وزن' : 'Quantity & Weight'}</Text>
             <Text style={styles.colValue}>{quantity}</Text>
           </View>
 
           {/* Row 3: Unit Rate */}
           <View style={styles.tableRow}>
-            <Text style={styles.colLabel}>قیمت فی من (Unit Rate)</Text>
+            <Text style={styles.colLabel}>{isUrdu ? 'قیمت فی من' : 'Rate per Mann'}</Text>
             <Text style={styles.colValue}>{pricePerUnit}</Text>
           </View>
 
           {/* Row 4: Total Value Highlight */}
           <View style={[styles.tableRow, styles.totalHighlightRow]}>
-            <Text style={styles.totalLabel}>کل مالیت (Total Amount)</Text>
+            <Text style={styles.totalLabel}>{isUrdu ? 'کل مالیت' : 'Total Contract Value'}</Text>
             <Text style={styles.totalValue}>PKR {totalAmount}</Text>
           </View>
 
           {/* Row 5: Logistics */}
           <View style={styles.tableRow}>
-            <Text style={styles.colLabel}>ڈیلیوری مقام (Location)</Text>
+            <Text style={styles.colLabel}>{isUrdu ? 'ڈیلیوری مقام' : 'Delivery Location'}</Text>
             <Text style={styles.colValue}>{deliveryLocation}</Text>
           </View>
 
           {/* Row 6: Delivery Date */}
           <View style={styles.tableRow}>
-            <Text style={styles.colLabel}>ترسیل کی تاریخ (Date)</Text>
+            <Text style={styles.colLabel}>{isUrdu ? 'ترسیل کی تاریخ' : 'Delivery Date'}</Text>
             <Text style={styles.colValue}>{deliveryDate}</Text>
           </View>
 
           {/* Row 7: Payment */}
           <View style={[styles.tableRow, { borderBottomWidth: 0 }]}>
-            <Text style={styles.colLabel}>ادائیگی (Payment Method)</Text>
+            <Text style={styles.colLabel}>{isUrdu ? 'طریقہ ادائیگی' : 'Payment Method'}</Text>
             <Text style={styles.colValue}>{paymentMethod}</Text>
           </View>
         </View>
 
-        {/* 4. Discrete Demo Simulator (Only if waiting for second party) */}
+        {/* 4. Discrete Demo Simulator */}
         {currentConfirmed && !bothConfirmed && (
           <View style={styles.demoBox}>
             <View style={styles.demoLeft}>
               <Sparkles size={14} color="#0F766E" />
               <Text style={styles.demoText}>
-                ٹیسٹنگ ڈیمو: دوسرے فریق ({otherRoleName}) کی توثیق درج کریں
+                {isUrdu
+                  ? `ڈیمو ٹیسٹنگ: دوسرے فریق (${otherRoleName}) کے طور پر توثیق کریں`
+                  : `Demo Testing: Simulate signature for ${otherRoleName}`}
               </Text>
             </View>
             <TouchableOpacity
@@ -420,7 +455,9 @@ export default function AgreementReviewScreen() {
               ) : (
                 <>
                   <UserCheck size={14} color="#FFFFFF" />
-                  <Text style={styles.demoBtnText}>توثیق سمیولیٹ کریں</Text>
+                  <Text style={styles.demoBtnText}>
+                    {isUrdu ? 'توثیق سمیولیٹ کریں' : 'Simulate Signing'}
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
@@ -436,7 +473,9 @@ export default function AgreementReviewScreen() {
               activeOpacity={0.85}
             >
               <FileCheck size={18} color="#FFFFFF" />
-              <Text style={styles.primaryBtnText}>حتمی معاہدہ دستاویز دیکھیں • View Agreement</Text>
+              <Text style={styles.primaryBtnText}>
+                {isUrdu ? 'حتمی معاہدہ دستاویز دیکھیں →' : 'View Final Agreement Document →'}
+              </Text>
             </TouchableOpacity>
           ) : !currentConfirmed ? (
             <TouchableOpacity
@@ -445,13 +484,17 @@ export default function AgreementReviewScreen() {
               activeOpacity={0.85}
             >
               <ShieldCheck size={18} color="#FFFFFF" />
-              <Text style={styles.primaryBtnText}>بائیو میٹرک اسکین و توثیق کریں • Verify & Sign</Text>
+              <Text style={styles.primaryBtnText}>
+                {isUrdu ? 'بائیو میٹرک اسکین و توثیق کریں →' : 'Verify Biometric Identity & Sign →'}
+              </Text>
             </TouchableOpacity>
           ) : (
             <View style={styles.waitingNotice}>
               <Clock size={16} color="#B45309" />
               <Text style={styles.waitingNoticeText}>
-                دوسرے فریق ({otherRoleName}) کی توثیق کا انتظار ہے...
+                {isUrdu
+                  ? `دوسرے فریق (${otherRoleName}) کی توثیق کا انتظار ہے...`
+                  : `Waiting for ${otherRoleName} to complete signature...`}
               </Text>
             </View>
           )}
@@ -462,7 +505,9 @@ export default function AgreementReviewScreen() {
             activeOpacity={0.7}
           >
             <ArrowLeft size={15} color="#15803D" />
-            <Text style={styles.backLinkText}>واپس تجارتی چیٹ پر جائیں • Return to Chat</Text>
+            <Text style={styles.backLinkText}>
+              {isUrdu ? 'واپس تجارتی چیٹ پر جائیں' : 'Return to Trade Chat'}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -498,6 +543,7 @@ const styles = StyleSheet.create({
   },
   headerTitleGroup: {
     flex: 1,
+    marginRight: 8,
   },
   headerMainTitle: {
     fontSize: 18,
@@ -510,10 +556,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontWeight: '500',
   },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   tradeTag: {
     backgroundColor: '#F1F5F9',
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 6,
   },
   tradeTagText: {

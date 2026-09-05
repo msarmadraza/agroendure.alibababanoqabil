@@ -19,10 +19,13 @@ import {
   Play,
 } from 'lucide-react-native';
 import { VoiceButton } from '@/components/VoiceButton';
+import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
+import { useLanguage } from '@/services/i18n/languageContext';
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
 
 export default function SmartContract() {
   const router = useRouter();
+  const { t, isUrdu } = useLanguage();
   const [currentStep, setCurrentStep] = useState(0);
   const [buyerConsent, setBuyerConsent] = useState(false);
   const [isRecordingConsent, setIsRecordingConsent] = useState(false);
@@ -30,24 +33,24 @@ export default function SmartContract() {
   const [isExplanationPlaying, setIsExplanationPlaying] = useState(false);
 
   const contractData = {
-    crop: 'اعلیٰ کوالٹی گندم',
-    quantity: '50 من',
+    crop: t('smartContract.defaultCrop'),
+    quantity: t('smartContract.defaultQuantity'),
     agreedPrice: 83000,
     totalAmount: 4150000,
-    deliveryDate: '25 اپریل 2024',
-    farmer: 'احمد علی',
-    buyer: 'علی حسن',
-    location: 'فیصل آباد، پنجاب',
-    qualityStandards: 'نمی 12% سے کم، صاف اور خشک',
-    penaltyClause: 'دیر سے ڈیلیوری پر 2% فی دن کاٹا جائے گا',
+    deliveryDate: t('smartContract.defaultDelivery'),
+    farmer: t('smartContract.defaultFarmer'),
+    buyer: t('smartContract.defaultBuyer'),
+    location: isUrdu ? 'فیصل آباد، پنجاب' : 'Faisalabad, Punjab',
+    qualityStandards: t('smartContract.defaultQuality'),
+    penaltyClause: t('smartContract.defaultPenalty'),
   };
 
   const steps = [
-    'معاہدہ کی تفصیلات',
-    'شرائط کی وضاحت',
-    'آوازی رضامندی',
-    'ڈیجیٹل دستخط',
-    'ایسکرو پیمنٹ',
+    t('smartContract.stepDetails'),
+    t('smartContract.stepTerms'),
+    t('smartContract.stepVoiceConsent'),
+    t('smartContract.stepSignature'),
+    t('smartContract.stepEscrow'),
   ];
 
   const handlePlayExplanation = () => {
@@ -67,7 +70,7 @@ export default function SmartContract() {
   };
 
   const handlePayment = () => {
-    Alert.alert('✅ کامیابی', 'معاہدہ مکمل ہو گیا اور رقم ایسکرو میں محفوظ ہے!');
+    Alert.alert(t('smartContract.successTitle'), t('smartContract.successDesc'));
     router.replace('/(tabs)/profile');
   };
 
@@ -76,24 +79,24 @@ export default function SmartContract() {
       <View style={styles.voiceBox}>
         <View style={styles.stepHeader}>
           <FileText size={18} color={Colors.foreground} />
-          <Text style={styles.stepTitle}>معاہدہ کی تفصیلات</Text>
+          <Text style={styles.stepTitle}>{t('smartContract.stepDetails')}</Text>
         </View>
 
         <View style={styles.detailList}>
-          <DetailRow label="فصل" value={contractData.crop} />
-          <DetailRow label="مقدار" value={contractData.quantity} />
+          <DetailRow label={t('smartContract.cropLabel')} value={contractData.crop} />
+          <DetailRow label={t('smartContract.quantityLabel')} value={contractData.quantity} />
           <DetailRow
-            label="فی من قیمت"
+            label={t('smartContract.pricePerMann')}
             value={`₨${contractData.agreedPrice.toLocaleString()}`}
           />
           <DetailRow
-            label="کل رقم"
+            label={t('smartContract.totalAmount')}
             value={`₨${contractData.totalAmount.toLocaleString()}`}
             highlight
           />
-          <DetailRow label="ڈیلیوری" value={contractData.deliveryDate} />
-          <DetailRow label="کسان" value={contractData.farmer} />
-          <DetailRow label="خریدار" value={contractData.buyer} />
+          <DetailRow label={t('smartContract.deliveryDate')} value={contractData.deliveryDate} />
+          <DetailRow label={t('smartContract.farmerLabel')} value={contractData.farmer} />
+          <DetailRow label={t('smartContract.buyerLabel')} value={contractData.buyer} />
         </View>
       </View>
 
@@ -101,7 +104,7 @@ export default function SmartContract() {
         style={styles.primaryButton}
         onPress={() => setCurrentStep(1)}
       >
-        <Text style={styles.primaryButtonText}>آگے بڑھیں</Text>
+        <Text style={styles.primaryButtonText}>{t('smartContract.proceed')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -109,32 +112,32 @@ export default function SmartContract() {
   const renderTermsExplanation = () => (
     <View style={styles.stepContent}>
       <View style={[styles.card, Shadows.soft]}>
-        <Text style={styles.cardTitle}>شرائط کی تفصیل</Text>
+        <Text style={styles.cardTitle}>{t('smartContract.termsDetails')}</Text>
 
         <View style={styles.termBlock}>
-          <Text style={styles.termTitle}>کوالٹی کی شرائط:</Text>
+          <Text style={styles.termTitle}>{t('smartContract.qualityTerms')}</Text>
           <Text style={styles.termText}>{contractData.qualityStandards}</Text>
         </View>
 
         <View style={styles.termBlock}>
-          <Text style={styles.termTitle}>پنالٹی:</Text>
+          <Text style={styles.termTitle}>{t('smartContract.penaltyClause')}</Text>
           <Text style={styles.termText}>{contractData.penaltyClause}</Text>
         </View>
 
         <View style={styles.termBlock}>
-          <Text style={styles.termTitle}>پیمنٹ:</Text>
+          <Text style={styles.termTitle}>{t('smartContract.paymentClause')}</Text>
           <Text style={styles.termText}>
-            ایسکرو میں محفوظ، ڈیلیوری کے بعد ریلیز
+            {t('smartContract.paymentInEscrow')}
           </Text>
         </View>
       </View>
 
       <View style={styles.explanationCard}>
         <View style={styles.explanationHeader}>
-          <Text style={styles.cardTitle}>AI وضاحت</Text>
+          <Text style={styles.cardTitle}>{t('smartContract.aiExplanation')}</Text>
           <TouchableOpacity onPress={handlePlayExplanation}>
             <Text style={styles.playText}>
-              {isExplanationPlaying ? 'رک جائیں' : 'سنیں'}
+              {isExplanationPlaying ? t('smartContract.stop') : t('smartContract.listen')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -147,12 +150,12 @@ export default function SmartContract() {
                 style={[styles.waveBar, { height: 10 + Math.random() * 20 }]}
               />
             ))}
-            <Text style={styles.playingText}>شرائط کی تفصیل چل رہی ہے...</Text>
+            <Text style={styles.playingText}>{t('smartContract.explainingText')}</Text>
           </View>
         )}
 
         <Text style={styles.termText}>
-          یہ معاہدہ آپ کو کوالٹی کی گارنٹی اور محفوظ پیمنٹ فراہم کرتا ہے۔
+          {t('smartContract.protectionNote')}
         </Text>
       </View>
 
@@ -160,7 +163,7 @@ export default function SmartContract() {
         style={styles.primaryButton}
         onPress={() => setCurrentStep(2)}
       >
-        <Text style={styles.primaryButtonText}>میں سمجھ گیا ہوں</Text>
+        <Text style={styles.primaryButtonText}>{t('smartContract.understood')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -168,15 +171,15 @@ export default function SmartContract() {
   const renderVoiceConsent = () => (
     <View style={styles.stepContent}>
       <View style={styles.voiceBox}>
-        <Text style={styles.stepTitle}>آوازی رضامندی</Text>
+        <Text style={styles.stepTitle}>{t('smartContract.voiceConsentTitle')}</Text>
         <Text style={styles.consentText}>
-          براہ کرم اس معاہدے سے اپنی رضامندی کا اظہار کریں
+          {t('smartContract.voiceConsentDesc')}
         </Text>
 
         <View style={styles.consentPhraseBox}>
-          <Text style={styles.consentPhraseLabel}>یہ کہیں:</Text>
+          <Text style={styles.consentPhraseLabel}>{t('smartContract.sayThis')}</Text>
           <Text style={styles.consentPhrase}>
-            "میں {contractData.buyer} اس معاہدے سے مکمل طور پر راضی ہوں اور تمام شرائط قبول کرتا ہوں"
+            "{isUrdu ? `میں ${contractData.buyer} اس معاہدے سے مکمل طور پر راضی ہوں اور تمام شرائط قبول کرتا ہوں` : `I, ${contractData.buyer}, fully agree to this contract and accept all terms`}"
           </Text>
         </View>
 
@@ -188,14 +191,14 @@ export default function SmartContract() {
         />
 
         {isRecordingConsent && (
-          <Text style={styles.recordingText}>ریکارڈ ہو رہا ہے... بولیں</Text>
+          <Text style={styles.recordingText}>{t('smartContract.recordingText')}</Text>
         )}
 
         {buyerConsent && (
           <View style={styles.consentConfirmed}>
             <CheckCircle size={16} color={Colors.success} />
             <Text style={styles.consentConfirmedText}>
-              رضامندی ریکارڈ ہو گئی
+              {t('smartContract.consentRecorded')}
             </Text>
           </View>
         )}
@@ -206,7 +209,7 @@ export default function SmartContract() {
         onPress={() => setCurrentStep(3)}
         disabled={!buyerConsent}
       >
-        <Text style={styles.primaryButtonText}>آگے بڑھیں</Text>
+        <Text style={styles.primaryButtonText}>{t('smartContract.proceed')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -216,14 +219,14 @@ export default function SmartContract() {
       <View style={[styles.card, Shadows.soft]}>
         <View style={styles.stepHeader}>
           <User size={18} color={Colors.foreground} />
-          <Text style={styles.cardTitle}>ڈیجیٹل دستخط</Text>
+          <Text style={styles.cardTitle}>{t('smartContract.digitalSignatureTitle')}</Text>
         </View>
 
         <View style={styles.signatureBox}>
-          <Text style={styles.signatureHint}>یہاں اپنا دستخط کریں</Text>
+          <Text style={styles.signatureHint}>{t('smartContract.signHere')}</Text>
           <View style={styles.signatureCanvas}>
             <Text style={styles.signatureCanvasText}>
-              {signature ? 'دستخط مکمل' : 'ٹچ کر کے دستخط کریں'}
+              {signature ? t('smartContract.signCompleted') : t('smartContract.touchToSign')}
             </Text>
           </View>
         </View>
@@ -233,13 +236,13 @@ export default function SmartContract() {
             style={styles.secondaryButton}
             onPress={() => setSignature('')}
           >
-            <Text style={styles.secondaryButtonText}>صاف کریں</Text>
+            <Text style={styles.secondaryButtonText}>{t('smartContract.clear')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.primaryButtonSmall}
             onPress={() => setSignature('signed')}
           >
-            <Text style={styles.primaryButtonText}>دستخط مکمل</Text>
+            <Text style={styles.primaryButtonText}>{t('smartContract.completeSignature')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -249,7 +252,7 @@ export default function SmartContract() {
         onPress={() => setCurrentStep(4)}
         disabled={!signature}
       >
-        <Text style={styles.primaryButtonText}>دستخط مکمل، آگے بڑھیں</Text>
+        <Text style={styles.primaryButtonText}>{t('smartContract.signAndProceed')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -258,29 +261,29 @@ export default function SmartContract() {
     <View style={styles.stepContent}>
       <View style={styles.successBox}>
         <Shield size={48} color={Colors.white} />
-        <Text style={styles.successTitle}>محفوظ پیمنٹ</Text>
+        <Text style={styles.successTitle}>{t('smartContract.escrowSecurityTitle')}</Text>
         <Text style={styles.successSubtitle}>
-          آپ کی رقم ایسکرو میں محفوظ ہے
+          {t('smartContract.escrowProtected')}
         </Text>
       </View>
 
       <View style={[styles.card, Shadows.soft]}>
         <View style={styles.stepHeader}>
           <CreditCard size={18} color={Colors.foreground} />
-          <Text style={styles.cardTitle}>پیمنٹ کی تفصیلات</Text>
+          <Text style={styles.cardTitle}>{t('smartContract.paymentDetailsTitle')}</Text>
         </View>
 
         <View style={styles.detailList}>
           <DetailRow
-            label="کل رقم"
+            label={t('smartContract.totalAmount')}
             value={`₨${contractData.totalAmount.toLocaleString()}`}
           />
           <DetailRow
-            label="سروس فیس (2%)"
+            label={t('smartContract.serviceFee')}
             value={`₨${(contractData.totalAmount * 0.02).toLocaleString()}`}
           />
           <DetailRow
-            label="کل ادائیگی"
+            label={t('smartContract.totalPayable')}
             value={`₨${(contractData.totalAmount * 1.02).toLocaleString()}`}
             highlight
           />
@@ -289,19 +292,19 @@ export default function SmartContract() {
 
       <View style={styles.paymentMethods}>
         <TouchableOpacity style={styles.paymentMethod}>
-          <Text style={styles.paymentMethodText}>بینک ٹرانسفر</Text>
+          <Text style={styles.paymentMethodText}>{t('smartContract.bankTransfer')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.paymentMethodOutline}>
-          <Text style={styles.paymentMethodOutlineText}>موبائل والٹ</Text>
+          <Text style={styles.paymentMethodOutlineText}>{t('smartContract.mobileWallet')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.paymentMethodOutline}>
-          <Text style={styles.paymentMethodOutlineText}>کریڈٹ کارڈ</Text>
+          <Text style={styles.paymentMethodOutlineText}>{t('smartContract.creditCard')}</Text>
         </TouchableOpacity>
       </View>
 
       <TouchableOpacity style={styles.successButton} onPress={handlePayment}>
         <Text style={styles.successButtonText}>
-          پیمنٹ کریں اور معاہدہ مکمل کریں
+          {t('smartContract.payAndFinalize')}
         </Text>
       </TouchableOpacity>
     </View>
@@ -314,11 +317,11 @@ export default function SmartContract() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft size={20} color={Colors.foreground} />
         </TouchableOpacity>
-        <View>
-          <Text style={styles.headerTitle}>اسمارٹ معاہدہ</Text>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <Text style={styles.headerTitle}>{t('smartContract.title')}</Text>
           <Text style={styles.headerSubtitle}>{steps[currentStep]}</Text>
         </View>
-        <View style={styles.headerSpacer} />
+        <LanguageSwitcherButton compact />
       </View>
 
       {/* Progress */}

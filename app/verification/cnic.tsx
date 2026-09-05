@@ -18,9 +18,13 @@ import { useDemoAuth } from '@/services/auth/demoAuthContext';
 import { processCNICVerificationImage } from '@/services/gemini/cnicVerification';
 import { confirmUserIdentity } from '@/services/verification/identityService';
 import { CNICExtractionResult, ExtractionSource } from '@/types/identityVerification';
+import { useLanguage } from '@/services/i18n/languageContext';
+import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
+import { ArrowLeft } from 'lucide-react-native';
 
 export default function CNICVerificationScreen() {
   const { activeUser } = useDemoAuth();
+  const { t, isUrdu } = useLanguage();
 
   const [cnicImage, setCnicImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -84,18 +88,22 @@ export default function CNICVerificationScreen() {
       <View style={styles.successContainer}>
         <View style={styles.successCard}>
           <CheckCircle2 size={64} color={Colors.primary} />
-          <Text style={styles.successTitle}>🎉 Identity Verified!</Text>
+          <Text style={styles.successTitle}>
+            {isUrdu ? 'شناخت کامیابی سے تصدیق ہو گئی!' : 'Identity Verified!'}
+          </Text>
           <Text style={styles.successSub}>
-            Your identity has been successfully verified. You are now authorized to create and publish crop listings.
+            {isUrdu
+              ? 'آپ کی شناخت کامیابی سے تصدیق ہو گئی ہے اور اب آپ فصلوں کی لسٹنگ بنا سکتے ہیں۔'
+              : 'Your identity has been successfully verified. You are now authorized to create and publish crop listings.'}
           </Text>
 
           <View style={styles.badgeBox}>
             <ShieldCheck size={18} color={Colors.primary} />
-            <Text style={styles.badgeText}>✓ Verified Seller Account</Text>
+            <Text style={styles.badgeText}>{t('verification.verifiedSeller')}</Text>
           </View>
 
           <Button
-            title="Continue to Create Crop Listing 🌾"
+            title={t('verification.continueToListing')}
             onPress={() => router.replace('/(tabs)/add' as any)}
             style={styles.continueBtn}
           />
@@ -105,79 +113,106 @@ export default function CNICVerificationScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerIconWrapper}>
-          <ShieldCheck size={32} color={Colors.primary} />
-        </View>
-        <Text style={styles.titleUrdu}>اپنی شناخت کی تصدیق کریں</Text>
-        <Text style={styles.titleEng}>Verify Your Identity</Text>
-        <Text style={styles.explanation}>
-          To help create a trusted marketplace, please verify your identity using your Pakistani CNIC.
-        </Text>
+    <View style={{ flex: 1, backgroundColor: Colors.background }}>
+      {/* Top Header Bar */}
+      <View style={styles.topNav}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          activeOpacity={0.7}
+        >
+          <ArrowLeft size={20} color="#1b4332" />
+        </TouchableOpacity>
+        <LanguageSwitcherButton compact />
       </View>
 
-      {/* Error Toast */}
-      {errorMessage ? (
-        <View style={styles.errorBox}>
-          <AlertCircle size={20} color={Colors.error} />
-          <Text style={styles.errorText}>{errorMessage}</Text>
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerIconWrapper}>
+            <ShieldCheck size={32} color={Colors.primary} />
+          </View>
+          <Text style={styles.titleUrdu}>{t('verification.cnicTitle')}</Text>
+          <Text style={styles.titleEng}>{t('verification.cnicSubtitle')}</Text>
+          <Text style={styles.explanation}>{t('verification.cnicDesc')}</Text>
         </View>
-      ) : null}
 
-      {/* Processing State */}
-      {isProcessing ? (
-        <View style={styles.processingCard}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.processingTitle}>AI Analyzing CNIC Document...</Text>
-          <Text style={styles.processingSub}>
-            Extracting identity details securely using multimodal vision OCR
+        {/* Error Toast */}
+        {errorMessage ? (
+          <View style={styles.errorBox}>
+            <AlertCircle size={20} color={Colors.error} />
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        ) : null}
+
+        {/* Processing State */}
+        {isProcessing ? (
+          <View style={styles.processingCard}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.processingTitle}>{t('verification.analyzingCnic')}</Text>
+            <Text style={styles.processingSub}>{t('verification.analyzingCnicSub')}</Text>
+          </View>
+        ) : extractionResult ? (
+          /* Result Review & Confirmation Card */
+          <CNICResultCard
+            holderName={extractionResult.holder_name || activeUser?.full_name || 'Chaudhry Ahmad'}
+            cnicNumber={extractionResult.cnic_number || '35202-1234567-1'}
+            confidence={extractionResult.confidence}
+            onConfirm={handleConfirmIdentity}
+            onRetake={() => {
+              setExtractionResult(null);
+              setCnicImage(null);
+            }}
+            isSubmitting={isSubmitting}
+          />
+        ) : (
+          /* Image Upload Box */
+          <View style={styles.stepBox}>
+            <CNICUploadBox
+              imageUri={cnicImage}
+              onSelectImage={(uri) => setCnicImage(uri)}
+              onClearImage={() => setCnicImage(null)}
+            />
+
+            <Button
+              title={isUrdu ? 'CNIC تصدیق کے لیے جمع کریں' : 'Submit CNIC for Verification'}
+              onPress={handleStartOCR}
+              disabled={!cnicImage}
+              icon={<ArrowRight size={18} color="#FFFFFF" />}
+              style={styles.submitBtn}
+            />
+          </View>
+        )}
+
+        <View style={styles.footerNote}>
+          <Lock size={14} color="#64748B" />
+          <Text style={styles.footerText}>
+            {isUrdu
+              ? 'آپ کا شناختی کارڈ ڈیٹا مکمل محفوظ اور انکرپٹڈ ہے۔'
+              : 'Your CNIC image is encrypted and stored in private security storage.'}
           </Text>
         </View>
-      ) : extractionResult ? (
-        /* Result Review & Confirmation Card */
-        <CNICResultCard
-          holderName={extractionResult.holder_name || activeUser?.full_name || 'Chaudhry Ahmad'}
-          cnicNumber={extractionResult.cnic_number || '35202-1234567-1'}
-          confidence={extractionResult.confidence}
-          onConfirm={handleConfirmIdentity}
-          onRetake={() => {
-            setExtractionResult(null);
-            setCnicImage(null);
-          }}
-          isSubmitting={isSubmitting}
-        />
-      ) : (
-        /* Image Upload Box */
-        <View style={styles.stepBox}>
-          <CNICUploadBox
-            imageUri={cnicImage}
-            onSelectImage={(uri) => setCnicImage(uri)}
-            onClearImage={() => setCnicImage(null)}
-          />
-
-          <Button
-            title="Submit CNIC for Verification"
-            onPress={handleStartOCR}
-            disabled={!cnicImage}
-            icon={<ArrowRight size={18} color="#FFFFFF" />}
-            style={styles.submitBtn}
-          />
-        </View>
-      )}
-
-      <View style={styles.footerNote}>
-        <Lock size={14} color="#64748B" />
-        <Text style={styles.footerText}>
-          Your CNIC image is encrypted and stored in private security storage.
-        </Text>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  topNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  backButton: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+  },
   container: {
     padding: Spacing.lg,
     backgroundColor: Colors.background,

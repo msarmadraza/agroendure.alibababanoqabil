@@ -22,9 +22,12 @@ import {
   Volume2,
 } from 'lucide-react-native';
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
+import { useLanguage } from '@/services/i18n/languageContext';
+import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
 
 export default function CropDetails() {
   const router = useRouter();
+  const { t, isUrdu } = useLanguage();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isPlayingVoice, setIsPlayingVoice] = useState(false);
   const [customBidAmount, setCustomBidAmount] = useState('');
@@ -87,8 +90,8 @@ export default function CropDetails() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft size={20} color={Colors.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>فصل کی تفصیلات</Text>
-        <View style={styles.headerSpacer} />
+        <Text style={styles.headerTitle}>{t('cropDetails.title')}</Text>
+        <LanguageSwitcherButton compact />
       </View>
 
       <ScrollView

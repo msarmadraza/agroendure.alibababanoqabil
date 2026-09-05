@@ -19,9 +19,12 @@ import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
 import { loadTradeMessages, loadTradeTerms } from '@/services/trade/demoTradeStore';
 import { fetchAgreementTerms } from '@/services/trade/tradeService';
 import { AgreementTerm, ChatMessage } from '@/types/database';
+import { useLanguage } from '@/services/i18n/languageContext';
+import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
 
 export default function Messages() {
   const router = useRouter();
+  const { t, isUrdu } = useLanguage();
   const [filter, setFilter] = useState<'all' | 'negotiating' | 'confirmed'>('all');
   const [terms101, setTerms101] = useState<AgreementTerm[]>(() => loadTradeTerms('trade-101'));
   const [messages101, setMessages101] = useState<ChatMessage[]>(() => loadTradeMessages('trade-101'));
@@ -46,10 +49,11 @@ export default function Messages() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Title Header */}
         <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.title}>پیغامات اور تجارتی بات چیت</Text>
-            <Text style={styles.subtitle}>AI ڈیل کوپائلٹ کے ذریعے معاہدات طے کریں</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>{t('messages.title')}</Text>
+            <Text style={styles.subtitle}>{t('messages.subtitle')}</Text>
           </View>
+          <LanguageSwitcherButton compact />
         </View>
 
         {/* AI Deal Copilot Quick Banner */}
@@ -64,17 +68,15 @@ export default function Messages() {
             </View>
             <View style={{ flex: 1 }}>
               <View style={styles.bannerTagRow}>
-                <Text style={styles.bannerTag}>AgroEndure AI Copilot 🤖</Text>
-                <Text style={styles.liveIndicator}>• لائیو فعال</Text>
+                <Text style={styles.bannerTag}>AgroEndure AI Copilot</Text>
+                <Text style={styles.liveIndicator}>• {t('messages.liveActive')}</Text>
               </View>
-              <Text style={styles.aiBannerTitle}>تجارتی مذاکرات اور اسمارٹ کنٹریکٹ</Text>
-              <Text style={styles.aiBannerDesc}>
-                اردو و انگریزی میں چیٹ یا آواز کے ذریعے قیمت، مقدار اور ڈیلیوری شرائط طے کریں
-              </Text>
+              <Text style={styles.aiBannerTitle}>{t('messages.bannerTitle')}</Text>
+              <Text style={styles.aiBannerDesc}>{t('messages.bannerDesc')}</Text>
             </View>
           </View>
           <View style={styles.aiBannerFooter}>
-            <Text style={styles.aiBannerActionText}>ٹریڈ روم میں جائیں (Open Trade Room) →</Text>
+            <Text style={styles.aiBannerActionText}>{t('messages.openTradeRoom')} →</Text>
           </View>
         </TouchableOpacity>
 
@@ -85,7 +87,7 @@ export default function Messages() {
             onPress={() => setFilter('all')}
           >
             <Text style={[styles.filterChipText, filter === 'all' && styles.filterChipTextActive]}>
-              تمام (All)
+              {t('messages.tabAll')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -93,7 +95,7 @@ export default function Messages() {
             onPress={() => setFilter('negotiating')}
           >
             <Text style={[styles.filterChipText, filter === 'negotiating' && styles.filterChipTextActive]}>
-              زیر گفت و شنید (Negotiating)
+              {t('messages.tabNegotiating')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -101,7 +103,7 @@ export default function Messages() {
             onPress={() => setFilter('confirmed')}
           >
             <Text style={[styles.filterChipText, filter === 'confirmed' && styles.filterChipTextActive]}>
-              معاہدے (Agreements)
+              {t('messages.tabConfirmed')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -122,14 +124,16 @@ export default function Messages() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={styles.nameRow}>
-                    <Text style={styles.partnerName}>چوہدری احمد (Chaudhry Ahmad)</Text>
+                    <Text style={styles.partnerName}>
+                      {isUrdu ? 'چوہدری احمد' : 'Chaudhry Ahmad'}
+                    </Text>
                     <View style={styles.verifiedBadge}>
                       <ShieldCheck size={11} color="#0F5132" />
-                      <Text style={styles.verifiedText}>تصدیق شدہ کسان</Text>
+                      <Text style={styles.verifiedText}>{t('messages.verifiedFarmer')}</Text>
                     </View>
                   </View>
                   <Text style={styles.tradeTitle}>
-                    🌾 سپر باسمتی چاول (Super Basmati Rice) • 100 من
+                    {isUrdu ? 'سپر باسمتی چاول • 100 من' : 'Super Basmati Rice • 100 Mann'}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -141,11 +145,11 @@ export default function Messages() {
               >
                 <MessageCircle size={14} color={Colors.mutedForeground} />
                 <Text style={styles.latestMsgText} numberOfLines={1}>
-                  {lastMsg101?.content || lastMsg101?.transcription || 'ٹھیک ہے، 5700 فائنل۔'}
+                  {lastMsg101?.content || lastMsg101?.transcription || (isUrdu ? 'ٹھیک ہے، 5700 فائنل۔' : 'Agreed, 5,700 final.')}
                 </Text>
                 <View style={styles.timeRow}>
                   <Clock size={11} color={Colors.mutedForeground} />
-                  <Text style={styles.timeText}>2 منٹ پہلے</Text>
+                  <Text style={styles.timeText}>{isUrdu ? '2 منٹ پہلے' : '2m ago'}</Text>
                 </View>
               </TouchableOpacity>
 
@@ -154,7 +158,9 @@ export default function Messages() {
                 <View style={styles.copilotHeader}>
                   <View style={styles.copilotHeaderLeft}>
                     <Bot size={15} color="#1b4332" />
-                    <Text style={styles.copilotTitle}>معاہدے کی پیش رفت (Agreement Completeness):</Text>
+                    <Text style={styles.copilotTitle}>
+                      {isUrdu ? 'معاہدے کی پیش رفت:' : 'Agreement Progress:'}
+                    </Text>
                   </View>
                   <Text style={styles.copilotPercent}>{progressPercent}%</Text>
                 </View>
@@ -169,27 +175,30 @@ export default function Messages() {
                   <View style={styles.agreedPill}>
                     <CheckCircle2 size={11} color="#0F5132" />
                     <Text style={styles.agreedPillText}>
-                      طے شدہ ({agreedCount}/6): چاول، 100 من، ₨5,700
+                      {isUrdu ? 'طے شدہ' : 'Agreed'} ({agreedCount}/6): {isUrdu ? 'چاول، 100 من، ₨5,700' : 'Rice, 100 Mann, ₨5,700'}
                     </Text>
                   </View>
                   {!isReadyForReview && (
                     <View style={styles.missingPill}>
                       <AlertTriangle size={11} color="#842029" />
-                      <Text style={styles.missingPillText}>زیر بحث: مقام، تاریخ، ادائیگی</Text>
+                      <Text style={styles.missingPillText}>
+                        {isUrdu ? 'زیرِ بحث: مقام، تاریخ، ادائیگی' : 'Pending: Location, Date, Payment'}
+                      </Text>
                     </View>
                   )}
                 </View>
               </View>
 
               {/* Action Buttons */}
-              {/* Single Action Button: بولی لگائیں */}
               <View style={styles.actionButtonsRow}>
                 <TouchableOpacity
                   style={styles.chatPrimaryBtn}
                   onPress={() => router.push('/trade/trade-101')}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.chatPrimaryText}>بولی لگائیں</Text>
+                  <Text style={styles.chatPrimaryText}>
+                    {isUrdu ? 'بولی لگائیں' : 'Place Bid'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -208,34 +217,41 @@ export default function Messages() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={styles.nameRow}>
-                    <Text style={styles.partnerName}>احمد علی (Ahmad Ali)</Text>
+                    <Text style={styles.partnerName}>
+                      {isUrdu ? 'احمد علی' : 'Ahmad Ali'}
+                    </Text>
                     <View style={[styles.statusBadge, { backgroundColor: '#FEF3C7' }]}>
-                      <Text style={[styles.statusText, { color: '#B45309' }]}>نئی بولی (New Bid)</Text>
+                      <Text style={[styles.statusText, { color: '#B45309' }]}>
+                        {isUrdu ? 'نئی بولی' : 'New Bid'}
+                      </Text>
                     </View>
                   </View>
-                  <Text style={styles.tradeTitle}>🌾 اعلیٰ کوالٹی گندم (Wheat) • 50 من</Text>
+                  <Text style={styles.tradeTitle}>
+                    {isUrdu ? 'اعلیٰ کوالٹی گندم • 50 من' : 'High Quality Wheat • 50 Mann'}
+                  </Text>
                 </View>
               </TouchableOpacity>
 
               <View style={styles.latestMsgBox}>
                 <MessageCircle size={14} color={Colors.mutedForeground} />
                 <Text style={styles.latestMsgText} numberOfLines={1}>
-                  سلام، آپ کی گندم کی قیمت میں کمی ممکن ہے؟
+                  {isUrdu ? 'سلام، آپ کی گندم کی قیمت میں کمی ممکن ہے؟' : 'Hello, can you offer a discount on the wheat price?'}
                 </Text>
                 <View style={styles.timeRow}>
                   <Clock size={11} color={Colors.mutedForeground} />
-                  <Text style={styles.timeText}>5 منٹ پہلے</Text>
+                  <Text style={styles.timeText}>{isUrdu ? '5 منٹ پہلے' : '5m ago'}</Text>
                 </View>
               </View>
 
-              {/* Single Action Button: بولی لگائیں */}
               <View style={styles.actionButtonsRow}>
                 <TouchableOpacity
                   style={styles.chatPrimaryBtn}
                   onPress={() => router.push('/trade/trade-101')}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.chatPrimaryText}>بولی لگائیں</Text>
+                  <Text style={styles.chatPrimaryText}>
+                    {isUrdu ? 'بولی لگائیں' : 'Place Bid'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -246,7 +262,9 @@ export default function Messages() {
             <View style={[styles.tradeCard, styles.confirmedCard, Shadows.soft]}>
               <View style={styles.confirmedBadgeTop}>
                 <FileCheck size={14} color="#0F5132" />
-                <Text style={styles.confirmedBadgeTopText}>ڈیجیٹل تصدیق شدہ معاہدہ (Confirmed Contract)</Text>
+                <Text style={styles.confirmedBadgeTopText}>
+                  {isUrdu ? 'ڈیجیٹل تصدیق شدہ معاہدہ' : 'Digitally Confirmed Contract'}
+                </Text>
               </View>
 
               <View style={styles.cardHeader}>
@@ -254,10 +272,16 @@ export default function Messages() {
                   <Text style={styles.avatarTextConfirmed}>✓</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.partnerName}>معاہدہ #AGR-2026-64722</Text>
-                  <Text style={styles.tradeTitle}>طارق ہول سیل خریدار ⇄ چوہدری احمد</Text>
+                  <Text style={styles.partnerName}>
+                    {isUrdu ? 'معاہدہ #AGR-2026-64722' : 'Contract #AGR-2026-64722'}
+                  </Text>
+                  <Text style={styles.tradeTitle}>
+                    {isUrdu ? 'طارق ہول سیل خریدار ⇄ چوہدری احمد' : 'Tariq Wholesale Buyer ⇄ Chaudhry Ahmad'}
+                  </Text>
                   <Text style={styles.confirmedSub}>
-                    100 من چاول • ₨5,700/من • ڈیلیوری: لاہور • بائیو میٹرک تصدیق شدہ
+                    {isUrdu
+                      ? '100 من چاول • ₨5,700/من • ڈیلیوری: لاہور • بائیو میٹرک تصدیق شدہ'
+                      : '100 Mann Rice • ₨5,700/Mann • Delivery: Lahore • Biometric Verified'}
                   </Text>
                 </View>
               </View>
@@ -269,7 +293,11 @@ export default function Messages() {
                   activeOpacity={0.8}
                 >
                   <FileText size={16} color="#FFFFFF" />
-                  <Text style={styles.finalDocText}>حتمی قانونی معاہدہ دستاویز دیکھیں (Final Document)</Text>
+                  <Text style={styles.finalDocText}>
+                    {isUrdu
+                      ? 'حتمی قانونی معاہدہ دستاویز دیکھیں →'
+                      : 'View Final Confirmed Agreement Document →'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Send, Mic } from 'lucide-react-native';
 import { VoiceRecorder } from './VoiceRecorder';
+import { useLanguage } from '@/services/i18n/languageContext';
 
 interface ChatInputProps {
   onSendTextMessage: (text: string) => void;
@@ -16,6 +17,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   inputText,
   setInputText,
 }) => {
+  const { t } = useLanguage();
   const [isRecording, setIsRecording] = useState(false);
 
   const handleSend = () => {
@@ -41,7 +43,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     <View style={styles.container}>
       <TextInput
         style={[styles.input, { maxHeight: 100 }]}
-        placeholder="Type a message (English, Urdu, Roman Urdu)..."
+        placeholder={t('trade.inputPlaceholder')}
         placeholderTextColor="#94A3B8"
         value={inputText}
         onChangeText={setInputText}
