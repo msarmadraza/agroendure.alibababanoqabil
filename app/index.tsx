@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,10 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   Alert,
+  Animated,
+  Easing,
+  PanResponder,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -105,8 +109,62 @@ export default function OnboardingFlow() {
   } = useOnboarding();
 
   const [step, setStep] = useState<OnboardingStep>('slides');
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const slideViewWidth = Math.min(windowWidth - 32, 400);
+
   const [slideIndex, setSlideIndex] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
+  const slideIndexRef = useRef(0);
+  slideIndexRef.current = slideIndex;
+
+  const translateX = useRef(new Animated.Value(0)).current;
+
+  const goToSlide = useCallback((targetIndex: number) => {
+    const clampedIndex = Math.max(0, Math.min(targetIndex, SLIDES.length - 1));
+    setSlideIndex(clampedIndex);
+    slideIndexRef.current = clampedIndex;
+
+    Animated.timing(translateX, {
+      toValue: -clampedIndex * slideViewWidth,
+      duration: 320,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [slideViewWidth, translateX]);
+
+  // Keep translateX in sync if window/view width changes
+  useEffect(() => {
+    translateX.setValue(-slideIndexRef.current * slideViewWidth);
+  }, [slideViewWidth]);
+
+  const goToNextSlide = () => {
+    if (slideIndex < SLIDES.length - 1) {
+      goToSlide(slideIndex + 1);
+    } else {
+      setStep('role');
+    }
+  };
+
+  const panResponder = useMemo(() => {
+    return PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dx) > 15 && Math.abs(gestureState.dy) < 40;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        const baseOffset = -slideIndexRef.current * slideViewWidth;
+        translateX.setValue(baseOffset + gestureState.dx);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const threshold = slideViewWidth * 0.18;
+        if (gestureState.dx < -threshold && slideIndexRef.current < SLIDES.length - 1) {
+          goToSlide(slideIndexRef.current + 1);
+        } else if (gestureState.dx > threshold && slideIndexRef.current > 0) {
+          goToSlide(slideIndexRef.current - 1);
+        } else {
+          goToSlide(slideIndexRef.current);
+        }
+      },
+    });
+  }, [slideViewWidth, goToSlide, translateX]);
 
   // Language
   const [selectedLang, setSelectedLang] = useState(data.preferredLanguage || 'ur');
@@ -131,25 +189,6 @@ export default function OnboardingFlow() {
   const otpRefs = useRef<(TextInput | null)[]>([]);
 
   const userId = activeUser?.id || 'demo-user';
-
-  // --- Slides ---
-  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offsetX / SLIDE_CONTENT_WIDTH);
-    if (index >= 0 && index < SLIDES.length) {
-      setSlideIndex(index);
-    }
-  }, []);
-
-  const goToNextSlide = () => {
-    if (slideIndex < SLIDES.length - 1) {
-      const nextIdx = slideIndex + 1;
-      setSlideIndex(nextIdx);
-      scrollRef.current?.scrollTo({ x: nextIdx * SLIDE_CONTENT_WIDTH, animated: true });
-    } else {
-      setStep('role');
-    }
-  };
 
   // --- Role ---
   const [selectedRole, setSelectedRole] = useState<'seller' | 'buyer'>(data.role || 'seller');
@@ -413,39 +452,45 @@ export default function OnboardingFlow() {
   // ===== RENDER: Slides =====
   const renderSlides = () => (
     <View style={styles.slidesWrapper}>
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        pagingEnabled={Platform.OS === 'ios'}
-        snapToInterval={SLIDE_CONTENT_WIDTH}
-        decelerationRate="fast"
-        showsHorizontalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        contentContainerStyle={styles.slidesScrollContainer}
+      {/* Seamless Animated Carousel Viewport */}
+      <View
+        style={[styles.carouselViewport, { width: slideViewWidth }]}
+        {...panResponder.panHandlers}
       >
-        {SLIDES.map((slide) => (
-          <View key={slide.id} style={[styles.slideItem, { width: SLIDE_CONTENT_WIDTH }]}>
-            <View style={styles.slidePosterFrame}>
-              <Image
-                source={slide.image}
-                style={styles.slidePosterImage}
-                resizeMode="cover"
-              />
+        <Animated.View
+          style={[
+            styles.carouselTrack,
+            {
+              width: slideViewWidth * SLIDES.length,
+              transform: [{ translateX }],
+            },
+          ]}
+        >
+          {SLIDES.map((slide) => (
+            <View key={slide.id} style={[styles.slideItem, { width: slideViewWidth }]}>
+              <View
+                style={[
+                  styles.slidePosterFrame,
+                  { height: Math.min(windowHeight * 0.58, 510) },
+                ]}
+              >
+                <Image
+                  source={slide.image}
+                  style={styles.slidePosterImage}
+                  resizeMode="cover"
+                />
+              </View>
             </View>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </Animated.View>
+      </View>
 
       {/* Slide Pagination Dots */}
       <View style={styles.slideDotsRow}>
         {SLIDES.map((_, i) => (
           <TouchableOpacity
             key={i}
-            onPress={() => {
-              setSlideIndex(i);
-              scrollRef.current?.scrollTo({ x: i * SLIDE_CONTENT_WIDTH, animated: true });
-            }}
+            onPress={() => goToSlide(i)}
             activeOpacity={0.7}
             style={[
               styles.slideDot,
@@ -456,7 +501,7 @@ export default function OnboardingFlow() {
       </View>
 
       {/* Action Buttons */}
-      <View style={styles.slideActionsContainer}>
+      <View style={[styles.slideActionsContainer, { width: slideViewWidth }]}>
         <TouchableOpacity
           style={styles.greenPillButton}
           onPress={goToNextSlide}
@@ -976,6 +1021,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: Spacing.lg,
     paddingBottom: Spacing.xxxl,
+    maxWidth: 480,
+    width: '100%',
+    alignSelf: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -1072,17 +1120,20 @@ const styles = StyleSheet.create({
 
   // Slides
   slidesWrapper: {
-    flex: 1,
     alignItems: 'center',
     width: '100%',
   },
-  slidesScrollContainer: {
-    alignItems: 'center',
+  carouselViewport: {
+    overflow: 'hidden',
+    alignSelf: 'center',
+    borderRadius: 24,
+  },
+  carouselTrack: {
+    flexDirection: 'row',
   },
   slideItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.xs,
   },
   slidePosterFrame: {
     height: Math.min(SCREEN_HEIGHT * 0.58, 510),
