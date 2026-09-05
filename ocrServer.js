@@ -53,6 +53,23 @@ function parseOCRText(rawText) {
   return null;
 }
 
+function splitTextForTTS(text, maxLen = 140) {
+  if (text.length <= maxLen) return [text];
+  const parts = [];
+  const sentences = text.split(/([۔!?؟\n,،]+)/);
+  let current = '';
+  for (const piece of sentences) {
+    if ((current + piece).length <= maxLen) {
+      current += piece;
+    } else {
+      if (current.trim()) parts.push(current.trim());
+      current = piece;
+    }
+  }
+  if (current.trim()) parts.push(current.trim());
+  return parts;
+}
+
 const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -64,13 +81,64 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (req.method === 'GET' && req.url === '/health') {
+  const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost:3001'}`);
+
+  if (req.method === 'GET' && urlObj.pathname === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'ok', service: 'AgroEndure OCR Proxy' }));
+    res.end(JSON.stringify({ status: 'ok', service: 'AgroEndure OCR & TTS Proxy' }));
     return;
   }
 
-  if (req.method === 'POST' && req.url === '/api/ocr') {
+  if (req.method === 'GET' && urlObj.pathname === '/api/tts') {
+    const text = urlObj.searchParams.get('text') || '';
+    const lang = urlObj.searchParams.get('lang') || 'ur';
+    if (!text) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Missing text parameter' }));
+      return;
+    }
+
+    (async () => {
+      try {
+        const chunks = splitTextForTTS(text, 140);
+        const buffers = [];
+
+        for (const chunk of chunks) {
+          if (!chunk.trim()) continue;
+          const googleUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk)}&tl=${encodeURIComponent(lang)}&client=tw-ob`;
+          const resp = await fetch(googleUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            },
+          });
+
+          if (resp.ok) {
+            const ab = await resp.arrayBuffer();
+            buffers.push(Buffer.from(ab));
+          }
+        }
+
+        if (buffers.length === 0) {
+          throw new Error('No audio buffers received from TTS service');
+        }
+
+        const combinedAudio = Buffer.concat(buffers);
+        res.writeHead(200, {
+          'Content-Type': 'audio/mpeg',
+          'Content-Length': combinedAudio.length,
+          'Cache-Control': 'public, max-age=86400',
+        });
+        res.end(combinedAudio);
+      } catch (err) {
+        console.warn('TTS proxy error:', err.message);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    })();
+    return;
+  }
+
+  if (req.method === 'POST' && urlObj.pathname === '/api/ocr') {
     let body = '';
     req.on('data', (chunk) => { body += chunk; });
     req.on('end', async () => {

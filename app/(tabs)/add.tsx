@@ -42,6 +42,8 @@ import { Listing } from '@/types/database';
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
 import { useLanguage } from '@/services/i18n/languageContext';
 import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
+import { VoiceGuidanceBar } from '@/components/ui/VoiceGuidanceBar';
+import { VOICE_SCRIPTS } from '@/services/voice/speechService';
 
 // Urdu questions + English hints shown for each AI step
 const AI_STEPS = [
@@ -239,19 +241,35 @@ export default function VoiceListing() {
     }
   };
 
-  const renderAiHeader = (stepIdx: number) => (
-    <View style={[styles.aiHeader, Shadows.soft]}>
-      <View style={styles.aiBadgePill}>
-        <Sparkles size={13} color={Colors.primary} />
-        <Text style={styles.aiBadgeText}>
-          {isUrdu ? 'ایگرو اینڈیور AI اسسٹنٹ' : 'AgroEndure AI Assistant'}
+  const renderAiHeader = (stepIdx: number) => {
+    const voiceText =
+      stepIdx === 0
+        ? VOICE_SCRIPTS.listingCrop
+        : stepIdx === 1
+        ? VOICE_SCRIPTS.listingQuantity
+        : VOICE_SCRIPTS.listingQuality;
+
+    return (
+      <View style={[styles.aiHeader, Shadows.soft]}>
+        <View style={styles.aiHeaderTopRow}>
+          <View style={styles.aiBadgePill}>
+            <Sparkles size={13} color={Colors.primary} />
+            <Text style={styles.aiBadgeText}>
+              {isUrdu ? 'ایگرو اینڈیور AI اسسٹنٹ' : 'AgroEndure AI Assistant'}
+            </Text>
+          </View>
+          <VoiceGuidanceBar
+            text={voiceText}
+            label={isUrdu ? 'سوال سنیں' : 'Listen Question'}
+            compact
+          />
+        </View>
+        <Text style={styles.stepTitleUrdu}>
+          {isUrdu ? AI_STEPS[stepIdx].titleUrdu : AI_STEPS[stepIdx].titleEng}
         </Text>
       </View>
-      <Text style={styles.stepTitleUrdu}>
-        {isUrdu ? AI_STEPS[stepIdx].titleUrdu : AI_STEPS[stepIdx].titleEng}
-      </Text>
-    </View>
-  );
+    );
+  };
 
   const renderTextInputRow = (stepIdx: number) => (
     <View style={styles.textSection}>
@@ -336,6 +354,10 @@ export default function VoiceListing() {
 
   const renderPhotoStep = () => (
     <View style={styles.stepContainer}>
+      <VoiceGuidanceBar
+        text={VOICE_SCRIPTS.listingPhotos}
+        label={isUrdu ? 'تصاویر کی رہنمائی سنیں' : 'Photo Guidance'}
+      />
       <PhotoUploadGrid
         images={images}
         onAddImage={handleAddPhoto}
@@ -367,6 +389,10 @@ export default function VoiceListing() {
 
   const renderPriceStep = () => (
     <View style={styles.stepContainer}>
+      <VoiceGuidanceBar
+        text={VOICE_SCRIPTS.listingPrice}
+        label={isUrdu ? 'قیمت کی رہنمائی سنیں' : 'Price Guidance'}
+      />
       <View style={styles.reviewBanner}>
         <ShieldCheck size={18} color={Colors.primary} />
         <Text style={styles.previewHeading}>آپ کی لسٹنگ کا حتمی جائزہ</Text>
@@ -610,6 +636,12 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#BBF7D0',
     gap: 6,
+  },
+  aiHeaderTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
   },
   aiBadgePill: {
     flexDirection: 'row',

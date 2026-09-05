@@ -25,6 +25,8 @@ import { crossTabSync } from '@/services/trade/crossTabSync';
 import { useDemoAuth } from '@/services/auth/demoAuthContext';
 import { useLanguage } from '@/services/i18n/languageContext';
 import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
+import { VoiceGuidanceBar } from '@/components/ui/VoiceGuidanceBar';
+import { generateAgreementAudioSummaryUrdu } from '@/services/voice/speechService';
 import { supabase } from '@/services/supabase/client';
 import {
   ArrowLeft,
@@ -247,6 +249,20 @@ export default function AgreementReviewScreen() {
   const qNum = parseNum(quantity) || 100;
   const totalAmount = (pNum * qNum).toLocaleString();
 
+  const buyerName = trade?.buyer?.full_name || (isUrdu ? 'طارق ہول سیل خریدار' : 'Tariq Wholesale Buyer');
+  const sellerName = trade?.seller?.full_name || (isUrdu ? 'چوہدری احمد کسان' : 'Chaudhry Ahmad');
+  const agreementAudioUrdu = generateAgreementAudioSummaryUrdu(
+    buyerName,
+    sellerName,
+    productName,
+    quantity,
+    pricePerUnit,
+    totalAmount,
+    deliveryLocation,
+    deliveryDate,
+    paymentMethod
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -302,6 +318,14 @@ export default function AgreementReviewScreen() {
               </View>
             )}
           </View>
+        </View>
+
+        {/* Voice Guidance for illiterates */}
+        <View style={{ marginBottom: 14 }}>
+          <VoiceGuidanceBar
+            text={agreementAudioUrdu}
+            label={isUrdu ? 'معاہدے کی مکمل تفصیل آواز میں سنیں' : 'Listen Full Agreement Audio'}
+          />
         </View>
 
         {/* 2. Compact Symmetrical Signatures Section */}

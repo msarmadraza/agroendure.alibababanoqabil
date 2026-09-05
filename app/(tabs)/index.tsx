@@ -24,6 +24,9 @@ import {
   Wind,
   ShoppingBag,
   Search,
+  Volume2,
+  VolumeX,
+  Sparkles,
 } from 'lucide-react-native';
 import { VoiceButton } from '@/components/VoiceButton';
 import { CropCard } from '@/components/CropCard';
@@ -33,6 +36,11 @@ import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
 import { useDemoAuth } from '@/services/auth/demoAuthContext';
 import { fetchUserTrades } from '@/services/trade/tradeService';
 import { useLanguage } from '@/services/i18n/languageContext';
+import {
+  speakUrdu,
+  stopSpeaking,
+  getInstantDashboardBriefingUrdu,
+} from '@/services/voice/speechService';
 import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
 
 export default function Dashboard() {
@@ -137,6 +145,35 @@ export default function Dashboard() {
         },
       ];
 
+  const [isBriefingSpeaking, setIsBriefingSpeaking] = useState(false);
+
+  const handlePlayBriefing = () => {
+    if (isBriefingSpeaking) {
+      stopSpeaking();
+      setIsBriefingSpeaking(false);
+      return;
+    }
+
+    setIsBriefingSpeaking(true);
+    try {
+      const text = getInstantDashboardBriefingUrdu(activeRole, {
+        activeListings: activeListingsCount,
+        activeNegotiations: activeNegotiationsCount,
+        topBid: topActiveBid,
+        availableCrops: recentCrops.length || 6,
+        userName: activeUser?.full_name || (isSeller ? 'کسان' : 'خریدار'),
+      });
+
+      speakUrdu(text, {
+        onStart: () => setIsBriefingSpeaking(true),
+        onEnd: () => setIsBriefingSpeaking(false),
+        onError: () => setIsBriefingSpeaking(false),
+      });
+    } catch {
+      setIsBriefingSpeaking(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -160,6 +197,43 @@ export default function Dashboard() {
         </View>
 
         <View style={styles.divider} />
+
+        {/* ── Dynamic AI Audio Briefing Bar ── */}
+        <TouchableOpacity
+          style={[styles.briefingBar, isBriefingSpeaking && styles.briefingBarActive]}
+          onPress={handlePlayBriefing}
+          activeOpacity={0.85}
+        >
+          <View style={styles.briefingLeft}>
+            <View style={[styles.briefingIconCircle, isBriefingSpeaking && styles.briefingIconCircleActive]}>
+              {isBriefingSpeaking ? (
+                <VolumeX size={18} color={Colors.white} />
+              ) : (
+                <Volume2 size={18} color={Colors.primary} />
+              )}
+            </View>
+            <View style={styles.briefingTexts}>
+              <View style={styles.briefingTitleRow}>
+                <Text style={styles.briefingTitle}>
+                  {isBriefingSpeaking
+                    ? (isUrdu ? 'آڈیو رپورٹ جاری ہے...' : 'Speaking Live Briefing...')
+                    : (isUrdu ? 'AI آواز سے لائیو رپورٹ سنیں' : 'Listen Live AI Audio Briefing')}
+                </Text>
+                <Sparkles size={14} color={isBriefingSpeaking ? Colors.error : Colors.primary} />
+              </View>
+              <Text style={styles.briefingSubtitle} numberOfLines={1}>
+                {isSeller
+                  ? (isUrdu ? 'فعال فصلوں، بولیوں اور مذاکرات کا خلاصہ' : 'Summary of crops, bids & active deals')
+                  : (isUrdu ? 'منڈی کے ریٹس اور نئی دستیاب فصلوں کی رپورٹ' : 'Mandi rates and available crop updates')}
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.briefingPill, isBriefingSpeaking && styles.briefingPillActive]}>
+            <Text style={[styles.briefingPillText, isBriefingSpeaking && styles.briefingPillTextActive]}>
+              {isBriefingSpeaking ? (isUrdu ? 'روکیں' : 'Stop') : (isUrdu ? 'سنیں' : 'Listen')}
+            </Text>
+          </View>
+        </TouchableOpacity>
 
         {/* ── Role-Specific Hero CTA ── */}
         {isSeller ? (
@@ -364,6 +438,77 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.borderLight,
     marginHorizontal: -Spacing.lg,
     marginTop: -Spacing.md,
+  },
+  // Briefing Bar
+  briefingBar: {
+    backgroundColor: '#F0FDF4',
+    borderRadius: Radius.xl,
+    padding: Spacing.md,
+    borderWidth: 1.5,
+    borderColor: '#BBF7D0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  briefingBarActive: {
+    backgroundColor: '#DCFCE7',
+    borderColor: Colors.primary,
+  },
+  briefingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    flex: 1,
+  },
+  briefingIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  briefingIconCircleActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  briefingTexts: {
+    flex: 1,
+    gap: 2,
+  },
+  briefingTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  briefingTitle: {
+    fontSize: FontSize.xs + 1,
+    fontWeight: '800',
+    color: Colors.foreground,
+  },
+  briefingSubtitle: {
+    fontSize: 11,
+    color: Colors.mutedForeground,
+  },
+  briefingPill: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+  },
+  briefingPillActive: {
+    backgroundColor: Colors.error,
+  },
+  briefingPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.white,
+  },
+  briefingPillTextActive: {
+    color: Colors.white,
   },
   // Voice Card
   voiceCard: {
