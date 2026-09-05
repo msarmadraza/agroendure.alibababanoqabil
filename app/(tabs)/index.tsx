@@ -455,8 +455,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    height: 32,
-    width: 140,
+    height: 34,
+    width: 130,
   },
   headerActions: {
     flexDirection: 'row',
