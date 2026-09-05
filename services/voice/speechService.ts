@@ -243,6 +243,38 @@ export function isSpeaking(): boolean {
 }
 
 /**
+ * Converts numbers to natural spoken Urdu text for speech synthesis.
+ * E.g. 12000 -> "12 ہزار", 570000 -> "5 لاکھ 70 ہزار", 85000 -> "85 ہزار"
+ * Eliminates TTS numeral mispronunciations caused by thousand commas.
+ */
+export function formatUrduNumber(input: number | string): string {
+  const num = typeof input === 'string' ? parseInt(input.replace(/[^0-9]/g, ''), 10) : input;
+  if (!num || isNaN(num) || num <= 0) return '';
+
+  if (num >= 10000000) {
+    const crore = Math.floor(num / 10000000);
+    const rem = num % 10000000;
+    return rem > 0 ? `${crore} کروڑ ${formatUrduNumber(rem)}` : `${crore} کروڑ`;
+  }
+  if (num >= 100000) {
+    const lakh = Math.floor(num / 100000);
+    const rem = num % 100000;
+    return rem > 0 ? `${lakh} لاکھ ${formatUrduNumber(rem)}` : `${lakh} لاکھ`;
+  }
+  if (num >= 1000) {
+    const hazar = Math.floor(num / 1000);
+    const rem = num % 1000;
+    return rem > 0 ? `${hazar} ہزار ${formatUrduNumber(rem)}` : `${hazar} ہزار`;
+  }
+  if (num >= 100) {
+    const sau = Math.floor(num / 100);
+    const rem = num % 100;
+    return rem > 0 ? `${sau} سو ${rem}` : `${sau} سو`;
+  }
+  return `${num}`;
+}
+
+/**
  * Returns instant Urdu dashboard briefing without network delay, ensuring prompt audio playback on click.
  */
 export function getInstantDashboardBriefingUrdu(
@@ -258,7 +290,8 @@ export function getInstantDashboardBriefingUrdu(
   const name = metrics.userName ? ` محترم ${metrics.userName}` : '';
 
   if (role === 'seller') {
-    const bidStr = metrics.topBid > 0 ? `آپ کی فصل پر سب سے بڑی بولی ${metrics.topBid.toLocaleString()} روپے ہے۔` : '';
+    const bidAmountUrdu = formatUrduNumber(metrics.topBid);
+    const bidStr = metrics.topBid > 0 ? `آپ کی فصل پر سب سے بڑی بولی ${bidAmountUrdu} روپے ہے۔` : '';
     return `خوش آمدید${name}! آپ کے پاس کل ${metrics.activeListings} فعال فصلیں لسٹ ہیں، اور ${metrics.activeNegotiations} خریداروں کے ساتھ تجارتی مذاکرات جاری ہیں۔ ${bidStr} نئی فصل لسٹ کرنے کے لیے مائیک کا بٹن دبائیں۔`;
   } else {
     return `خوش آمدید${name}! منڈی میں آج ${metrics.availableCrops} تازہ فصلیں خریداری کے لیے دستیاب ہیں۔ آپ کے ${metrics.activeNegotiations} کسانوں کے ساتھ مذاکرات جاری ہیں۔ بولیاں لگانے کے لیے منڈی براؤز کریں۔`;
@@ -284,7 +317,8 @@ export async function generateDashboardBriefingUrdu(
   // 1. Template generation
   let briefing = '';
   if (role === 'seller') {
-    const bidStr = metrics.topBid > 0 ? `آپ کی فصل پر سب سے بڑی بولی ${metrics.topBid.toLocaleString()} روپے ہے۔` : '';
+    const bidAmountUrdu = formatUrduNumber(metrics.topBid);
+    const bidStr = metrics.topBid > 0 ? `آپ کی فصل پر سب سے بڑی بولی ${bidAmountUrdu} روپے ہے۔` : '';
     briefing = `خوش آمدید${name}! آپ کے پاس کل ${metrics.activeListings} فعال فصلیں لسٹ ہیں، اور ${metrics.activeNegotiations} خریداروں کے ساتھ تجارتی مذاکرات جاری ہیں۔ ${bidStr} نئی فصل لسٹ کرنے کے لیے مائیک کا بٹن دبائیں۔`;
   } else {
     briefing = `خوش آمدید${name}! منڈی میں آج ${metrics.availableCrops} تازہ فصلیں خریداری کے لیے دستیاب ہیں۔ آپ کے ${metrics.activeNegotiations} کسانوں کے ساتھ مذاکرات جاری ہیں۔ بولیاں لگانے کے لیے منڈی براؤز کریں۔`;
@@ -304,6 +338,7 @@ Stats:
 
 Rules:
 - Speak in respectful, natural Pakistani Urdu (Nastaliq characters).
+- Never use English thousands notation (e.g. say "12 ہزار" not "12K" or "12,000").
 - Return ONLY the Urdu sentence, nothing else.`;
 
       const res = await fetch(
@@ -347,5 +382,7 @@ export function generateAgreementAudioSummaryUrdu(
   deliveryDate: string,
   paymentMethod: string
 ): string {
-  return `یہ تجارتی معاہدہ خریدار ${buyerName} اور کسان ${sellerName} کے درمیان طے پایا ہے۔ فصل: ${productName}، مقدار: ${quantity}، قیمت: ${pricePerUnit}، کل مالیت: ${totalAmount} روپے ہے۔ ترسیل کا مقام ${deliveryLocation} ہے اور تاریخ ترسیل ${deliveryDate} ہے۔ ادائیگی کا طریقہ ${paymentMethod} ہے۔ دونوں فریقین شرائط کی تصدیق کے لیے بائیو میٹرک تصدیق کریں۔`;
+  const cleanTotal = formatUrduNumber(totalAmount) || totalAmount.replace(/,/g, '');
+  const cleanPrice = formatUrduNumber(pricePerUnit) || pricePerUnit.replace(/,/g, '');
+  return `یہ تجارتی معاہدہ خریدار ${buyerName} اور کسان ${sellerName} کے درمیان طے پایا ہے۔ فصل: ${productName}، مقدار: ${quantity}، قیمت: ${cleanPrice} روپے، کل مالیت: ${cleanTotal} روپے ہے۔ ترسیل کا مقام ${deliveryLocation} ہے اور تاریخ ترسیل ${deliveryDate} ہے۔ ادائیگی کا طریقہ ${paymentMethod} ہے۔ دونوں فریقین تصدیق کے لیے بائیو میٹرک توثیق مکمل کریں۔`;
 }

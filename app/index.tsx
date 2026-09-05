@@ -52,7 +52,7 @@ import { translateEnglishNameToUrdu } from '@/services/gemini/nameTranslationSer
 import { CNICExtractionResult, ExtractionSource } from '@/types/identityVerification';
 import { CNICUploadBox } from '@/components/verification/CNICUploadBox';
 import { CNICResultCard } from '@/components/verification/CNICResultCard';
-import { VoiceGuidanceBar } from '@/components/ui/VoiceGuidanceBar';
+import { VoiceCircleButton } from '@/components/ui/VoiceCircleButton';
 import { VOICE_SCRIPTS } from '@/services/voice/speechService';
 
 type OnboardingStep = 'slides' | 'role' | 'language' | 'cnic' | 'face' | 'phone';
@@ -412,13 +412,6 @@ export default function OnboardingFlow() {
         ))}
       </View>
 
-      <View style={{ paddingHorizontal: Spacing.xl, marginBottom: Spacing.xs }}>
-        <VoiceGuidanceBar
-          text={VOICE_SCRIPTS.onboardingSlides}
-          label="ایپ کا تعارف سنیں"
-        />
-      </View>
-
       <View style={styles.slideActions}>
         <TouchableOpacity style={styles.primaryButton} onPress={goToNextSlide} activeOpacity={0.88}>
           <Text style={styles.primaryButtonText}>
@@ -445,11 +438,6 @@ export default function OnboardingFlow() {
         <Text style={styles.stepTitle}>اپنا کردار منتخب کریں</Text>
         <Text style={styles.stepSubtitle}>Select your account role to continue</Text>
       </View>
-
-      <VoiceGuidanceBar
-        text={VOICE_SCRIPTS.onboardingRole}
-        label="کردار منتخب کرنے کی رہنمائی سنیں"
-      />
 
       <View style={styles.roleGrid}>
         {/* Farmer Card */}
@@ -559,11 +547,6 @@ export default function OnboardingFlow() {
         <Text style={styles.stepSubtitle}>Choose your preferred app language</Text>
       </View>
 
-      <VoiceGuidanceBar
-        text={VOICE_SCRIPTS.onboardingLanguage}
-        label="زبان منتخب کرنے کی رہنمائی سنیں"
-      />
-
       <View style={styles.languageList}>
         {[
           { code: 'ur', native: 'اردو', name: 'Urdu (پاکستانی اردو)', badge: 'تجویز کردہ • Recommended' },
@@ -622,11 +605,6 @@ export default function OnboardingFlow() {
         <Text style={styles.stepTitle}>شناخت کی تصدیق</Text>
         <Text style={styles.stepSubtitle}>Upload your Pakistani CNIC for verification</Text>
       </View>
-
-      <VoiceGuidanceBar
-        text={VOICE_SCRIPTS.onboardingCnic}
-        label="شناختی کارڈ اسکین کی رہنمائی سنیں"
-      />
 
       {cnicError && (
         <View style={styles.errorBox}>
@@ -695,11 +673,6 @@ export default function OnboardingFlow() {
         <Text style={styles.stepTitle}>تصویری تصدیق (سیلفی)</Text>
         <Text style={styles.stepSubtitle}>Take a clear selfie to match with your CNIC</Text>
       </View>
-
-      <VoiceGuidanceBar
-        text={VOICE_SCRIPTS.onboardingFace}
-        label="سیلفی تصدیق کی رہنمائی سنیں"
-      />
 
       {facePhotoUri ? (
         <View style={styles.facePreview}>
@@ -815,11 +788,6 @@ export default function OnboardingFlow() {
         <Text style={styles.stepSubtitle}>Enter your phone number to receive OTP code</Text>
       </View>
 
-      <VoiceGuidanceBar
-        text={VOICE_SCRIPTS.onboardingPhone}
-        label="فون نمبر تصدیق کی رہنمائی سنیں"
-      />
-
       <View style={styles.phoneInputRow}>
         <View style={styles.countryCode}>
           <Text style={styles.countryCodeText}>+92</Text>
@@ -888,6 +856,19 @@ export default function OnboardingFlow() {
     </View>
   );
 
+  const onboardingVoiceScript =
+    step === 'slides'
+      ? VOICE_SCRIPTS.onboardingSlides
+      : step === 'role'
+      ? VOICE_SCRIPTS.onboardingRole
+      : step === 'language'
+      ? VOICE_SCRIPTS.onboardingLanguage
+      : step === 'cnic'
+      ? VOICE_SCRIPTS.onboardingCnic
+      : step === 'face'
+      ? VOICE_SCRIPTS.onboardingFace
+      : VOICE_SCRIPTS.onboardingPhone;
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
@@ -902,6 +883,11 @@ export default function OnboardingFlow() {
               <View style={{ width: 40 }} />
             )}
             {renderDots()}
+            <VoiceCircleButton
+              text={onboardingVoiceScript}
+              autoPlay
+              size={38}
+            />
           </View>
 
           {step === 'slides' && renderSlides()}

@@ -25,7 +25,7 @@ import { crossTabSync } from '@/services/trade/crossTabSync';
 import { useDemoAuth } from '@/services/auth/demoAuthContext';
 import { useLanguage } from '@/services/i18n/languageContext';
 import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
-import { VoiceGuidanceBar } from '@/components/ui/VoiceGuidanceBar';
+import { VoiceCircleButton } from '@/components/ui/VoiceCircleButton';
 import { generateAgreementAudioSummaryUrdu } from '@/services/voice/speechService';
 import { supabase } from '@/services/supabase/client';
 import {
@@ -280,6 +280,7 @@ export default function AgreementReviewScreen() {
             </View>
 
             <View style={styles.headerRightActions}>
+              <VoiceCircleButton text={agreementAudioUrdu} autoPlay size={36} />
               <LanguageSwitcherButton compact />
               <View style={styles.tradeTag}>
                 <Text style={styles.tradeTagText}>#{tradeId}</Text>
@@ -318,14 +319,6 @@ export default function AgreementReviewScreen() {
               </View>
             )}
           </View>
-        </View>
-
-        {/* Voice Guidance for illiterates */}
-        <View style={{ marginBottom: 14 }}>
-          <VoiceGuidanceBar
-            text={agreementAudioUrdu}
-            label={isUrdu ? 'معاہدے کی مکمل تفصیل آواز میں سنیں' : 'Listen Full Agreement Audio'}
-          />
         </View>
 
         {/* 2. Compact Symmetrical Signatures Section */}

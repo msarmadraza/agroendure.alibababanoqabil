@@ -355,7 +355,19 @@ export default function Profile() {
                     <TouchableOpacity
                       key={listing.id}
                       style={styles.listingItem}
-                      onPress={() => router.push('/crop-details' as any)}
+                      onPress={() => {
+                        const imgUri = listing.images?.[0]?.public_url;
+                        router.push({
+                          pathname: '/crop-details',
+                          params: {
+                            id: listing.id,
+                            imageUri: imgUri,
+                            title: listing.title,
+                            price: String(listing.price),
+                            quantity: `${listing.quantity} ${listing.quantity_unit}`,
+                          },
+                        });
+                      }}
                       activeOpacity={0.8}
                     >
                       <View style={styles.listingItemLeft}>

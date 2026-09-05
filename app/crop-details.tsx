@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
   Star,
@@ -26,65 +26,87 @@ import {
 import { Colors, Radius, Spacing, FontSize, Shadows } from '@/constants/theme';
 import { useLanguage } from '@/services/i18n/languageContext';
 import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
+import { fetchListingById } from '@/services/marketplace/listingService';
+import { Listing } from '@/types/database';
+import { VoiceCircleButton } from '@/components/ui/VoiceCircleButton';
+import { formatUrduNumber, speakUrdu, stopSpeaking } from '@/services/voice/speechService';
 
 export default function CropDetails() {
   const router = useRouter();
   const { t, isUrdu } = useLanguage();
+  const { id, imageUri, title: paramTitle, price: paramPrice, quantity: paramQty, location: paramLoc } =
+    useLocalSearchParams<{
+      id?: string;
+      imageUri?: string;
+      title?: string;
+      price?: string;
+      quantity?: string;
+      location?: string;
+    }>();
+
+  const [listing, setListing] = useState<Listing | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isPlayingVoice, setIsPlayingVoice] = useState(false);
   const [customBidAmount, setCustomBidAmount] = useState('');
 
-  const cropData = {
-    id: '1',
-    title: isUrdu ? 'اعلیٰ کوالٹی گندم' : 'Premium Quality Wheat',
-    price: 85000,
-    quantity: isUrdu ? '50 من' : '50 Mann',
-    location: isUrdu ? 'فیصل آباد، پنجاب' : 'Faisalabad, Punjab',
-    harvestDate: isUrdu ? '15 اپریل 2024' : 'April 15, 2024',
-    quality: isUrdu ? 'پریمیم' : 'Premium',
-    variety: isUrdu ? 'پنجاب 2011' : 'Punjab 2011',
-    moisture: '12%',
-    farmer: {
-      name: isUrdu ? 'احمد علی' : 'Ahmad Ali',
-      rating: 4.8,
-      totalReviews: 23,
-      memberSince: '2022',
-      phone: '+92 300 1234567',
-      completedSales: 156,
-    },
-    images: [
-      require('@/assets/wheat-field.jpg'),
-      require('@/assets/rice-seedlings.jpg'),
-      require('@/assets/cotton-harvest.jpg'),
-    ],
-    description: isUrdu
-      ? 'یہ بہترین کوالٹی کا گندم ہے۔ بالکل صاف اور خشک، کوئی کیڑا نہیں۔ فوری ڈیلیوری کے لیے دستیاب۔'
-      : 'Premium quality wheat, clean and dry with no pest damage. Available for immediate delivery.',
-    voiceDescription: true,
-    currentBids: [
-      {
-        bidder: isUrdu ? 'علی حسن' : 'Ali Hassan',
-        amount: 83000,
-        time: isUrdu ? '2 گھنٹے پہلے' : '2h ago',
-      },
-      {
-        bidder: isUrdu ? 'محمد کریم' : 'Muhammad Karim',
-        amount: 81000,
-        time: isUrdu ? '4 گھنٹے پہلے' : '4h ago',
-      },
-    ],
-    specifications: [
-      { label: isUrdu ? 'نمی' : 'Moisture', value: '12%' },
-      { label: isUrdu ? 'پیداوار' : 'Yield', value: isUrdu ? '45 من/ایکڑ' : '45 Mann/Acre' },
-      { label: isUrdu ? 'دانے کا سائز' : 'Grain Size', value: isUrdu ? 'متوسط' : 'Medium' },
-      { label: isUrdu ? 'رنگ' : 'Color', value: isUrdu ? 'سنہری' : 'Golden' },
-    ],
-  };
+  useEffect(() => {
+    async function load() {
+      if (id) {
+        const found = await fetchListingById(id);
+        if (found) {
+          setListing(found);
+        }
+      }
+    }
+    load();
+  }, [id]);
+
+  // Resolve Real Uploaded Photos
+  const images: any[] = [];
+  if (listing?.images && listing.images.length > 0) {
+    listing.images.forEach((img) => {
+      if (img.public_url) images.push({ uri: img.public_url });
+    });
+  }
+  if (images.length === 0 && imageUri) {
+    images.push({ uri: imageUri });
+  }
+  if (images.length === 0) {
+    const p = (listing?.product_name || paramTitle || 'wheat').toLowerCase();
+    if (p.includes('rice') || p.includes('چاول') || p.includes('basmati')) {
+      images.push(require('@/assets/rice-seedlings.jpg'));
+    } else if (p.includes('cotton') || p.includes('کپاس')) {
+      images.push(require('@/assets/cotton-harvest.jpg'));
+    } else {
+      images.push(require('@/assets/wheat-field.jpg'));
+    }
+  }
+
+  const cropTitle = listing?.title || paramTitle || (isUrdu ? 'اعلیٰ کوالٹی گندم' : 'Premium Quality Wheat');
+  const cropPrice = listing?.price ? Number(listing.price) : (paramPrice ? Number(paramPrice) : 85000);
+  const cropQuantity = listing ? `${listing.quantity} ${listing.quantity_unit}` : (paramQty || (isUrdu ? '50 من' : '50 Mann'));
+  const cropLocation = paramLoc || (isUrdu ? 'فیصل آباد، پنجاب' : 'Faisalabad, Punjab');
+  const cropQuality = listing?.quality || (isUrdu ? 'پریمیم' : 'Premium');
+  const cropFarmerName = listing?.seller?.full_name || (isUrdu ? 'احمد علی' : 'Ahmad Ali');
+  const cropDescription = listing?.description || (isUrdu
+    ? 'یہ بہترین کوالٹی کا گندم ہے۔ بالکل صاف اور خشک، کوئی کیڑا نہیں۔ فوری ڈیلیوری کے لیے دستیاب۔'
+    : 'Premium quality crop, clean and dry with no pest damage. Available for immediate delivery.');
+
+  const cropAudioText = isUrdu
+    ? `فصل: ${cropTitle}۔ مقدار: ${cropQuantity}۔ قیمت: ${formatUrduNumber(cropPrice)} روپے فی من۔ کسان: ${cropFarmerName}۔ ترسیل کا مقام: ${cropLocation}۔ سودا کرنے کے لیے بات چیت شروع کریں۔`
+    : `Crop: ${cropTitle}. Quantity: ${cropQuantity}. Price: ${cropPrice} PKR per unit. Location: ${cropLocation}.`;
 
   const handlePlayVoice = () => {
-    setIsPlayingVoice(!isPlayingVoice);
-    if (!isPlayingVoice) {
-      setTimeout(() => setIsPlayingVoice(false), 3000);
+    if (isPlayingVoice) {
+      stopSpeaking();
+      setIsPlayingVoice(false);
+    } else {
+      setIsPlayingVoice(true);
+      speakUrdu(cropAudioText, {
+        onStart: () => setIsPlayingVoice(true),
+        onEnd: () => setIsPlayingVoice(false),
+        onError: () => setIsPlayingVoice(false),
+      });
     }
   };
 
@@ -94,14 +116,34 @@ export default function CropDetails() {
     }
   };
 
+  const currentBids = [
+    {
+      bidder: isUrdu ? 'علی حسن' : 'Ali Hassan',
+      amount: cropPrice > 5000 ? cropPrice - 2000 : cropPrice,
+      time: isUrdu ? '2 گھنٹے پہلے' : '2h ago',
+    },
+    {
+      bidder: isUrdu ? 'محمد کریم' : 'Muhammad Karim',
+      amount: cropPrice > 5000 ? cropPrice - 4000 : cropPrice,
+      time: isUrdu ? '4 گھنٹے پہلے' : '4h ago',
+    },
+  ];
+
+  const specifications = [
+    { label: isUrdu ? 'معیار' : 'Quality', value: cropQuality },
+    { label: isUrdu ? 'مقدار' : 'Quantity', value: cropQuantity },
+    { label: isUrdu ? 'نمی' : 'Moisture', value: '12%' },
+    { label: isUrdu ? 'پیداوار' : 'Yield', value: isUrdu ? '45 من/ایکڑ' : '45 Mann/Acre' },
+  ];
+
+  const bestBid = Math.max(...currentBids.map((b) => b.amount));
+
   // Build 2-letter monogram for farmer
-  const nameParts = cropData.farmer.name.trim().split(' ');
+  const nameParts = cropFarmerName.trim().split(' ');
   const monogram =
     nameParts.length >= 2
       ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
-      : cropData.farmer.name.slice(0, 2).toUpperCase();
-
-  const bestBid = Math.max(...cropData.currentBids.map((b) => b.amount));
+      : cropFarmerName.slice(0, 2).toUpperCase();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -111,38 +153,43 @@ export default function CropDetails() {
           <ArrowLeft size={20} color={Colors.foreground} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('cropDetails.title')}</Text>
-        <LanguageSwitcherButton compact />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <VoiceCircleButton text={cropAudioText} autoPlay size={36} />
+          <LanguageSwitcherButton compact />
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* ── Image Carousel ── */}
         <View style={styles.gallery}>
           <Image
-            source={cropData.images[currentImageIndex]}
+            source={images[currentImageIndex] || images[0]}
             style={styles.galleryImage}
             resizeMode="cover"
           />
-          <View style={styles.imageDots}>
-            {cropData.images.map((_, index) => (
-              <TouchableOpacity
-                key={index}
-                onPress={() => setCurrentImageIndex(index)}
-                style={[styles.dot, index === currentImageIndex && styles.dotActive]}
-              />
-            ))}
-          </View>
+          {images.length > 1 && (
+            <View style={styles.imageDots}>
+              {images.map((_, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => setCurrentImageIndex(index)}
+                  style={[styles.dot, index === currentImageIndex && styles.dotActive]}
+                />
+              ))}
+            </View>
+          )}
           <View style={styles.qualityTag}>
             <ShieldCheck size={12} color={Colors.white} />
-            <Text style={styles.qualityTagText}>{cropData.quality}</Text>
+            <Text style={styles.qualityTagText}>{cropQuality}</Text>
           </View>
         </View>
 
         {/* ── Title & Price ── */}
         <View style={styles.titleCard}>
           <View style={styles.titleRow}>
-            <Text style={styles.cropTitle}>{cropData.title}</Text>
+            <Text style={styles.cropTitle}>{cropTitle}</Text>
             <View style={styles.priceBox}>
-              <Text style={styles.priceValue}>PKR {cropData.price.toLocaleString()}</Text>
+              <Text style={styles.priceValue}>PKR {cropPrice.toLocaleString()}</Text>
               <Text style={styles.priceUnit}>{isUrdu ? 'فی من' : 'per Mann'}</Text>
             </View>
           </View>
@@ -151,59 +198,57 @@ export default function CropDetails() {
           <View style={styles.statsChips}>
             <View style={styles.chip}>
               <Package size={12} color={Colors.primary} />
-              <Text style={styles.chipText}>{cropData.quantity}</Text>
+              <Text style={styles.chipText}>{cropQuantity}</Text>
             </View>
             <View style={styles.chip}>
               <MapPin size={12} color={Colors.primary} />
-              <Text style={styles.chipText}>{cropData.location}</Text>
+              <Text style={styles.chipText}>{cropLocation}</Text>
             </View>
             <View style={styles.chip}>
               <Calendar size={12} color={Colors.primary} />
-              <Text style={styles.chipText}>{cropData.harvestDate}</Text>
+              <Text style={styles.chipText}>{isUrdu ? 'تازہ فصل' : 'Fresh Crop'}</Text>
             </View>
           </View>
 
-          <Text style={styles.description}>{cropData.description}</Text>
+          <Text style={styles.description}>{cropDescription}</Text>
         </View>
 
         {/* ── Voice Description ── */}
-        {cropData.voiceDescription && (
-          <View style={[styles.card, Shadows.soft]}>
-            <View style={styles.voiceRow}>
-              <View style={styles.voiceLeft}>
-                <View style={styles.voiceIconBg}>
-                  <Volume2 size={18} color={Colors.primary} />
-                </View>
-                <View>
-                  <Text style={styles.voiceTitle}>
-                    {isUrdu ? 'آواز میں تفصیل' : 'Voice Description'}
-                  </Text>
-                  <Text style={styles.voiceSub}>
-                    {isUrdu ? 'کسان کی زبان میں' : 'By the farmer'}
-                  </Text>
-                </View>
+        <View style={[styles.card, Shadows.soft]}>
+          <View style={styles.voiceRow}>
+            <View style={styles.voiceLeft}>
+              <View style={styles.voiceIconBg}>
+                <Volume2 size={18} color={Colors.primary} />
               </View>
-              <TouchableOpacity onPress={handlePlayVoice} style={styles.playBtn}>
-                {isPlayingVoice
-                  ? <Pause size={18} color={Colors.primary} />
-                  : <Play size={18} color={Colors.primary} />}
-              </TouchableOpacity>
+              <View>
+                <Text style={styles.voiceTitle}>
+                  {isUrdu ? 'آواز میں تفصیل' : 'Voice Description'}
+                </Text>
+                <Text style={styles.voiceSub}>
+                  {isUrdu ? 'کسان کی زبان میں' : 'By the farmer'}
+                </Text>
+              </View>
             </View>
-            {isPlayingVoice && (
-              <View style={styles.waveformRow}>
-                {[...Array(12)].map((_, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.waveBar,
-                      { height: 8 + ((i * 7) % 20) },
-                    ]}
-                  />
-                ))}
-              </View>
-            )}
+            <TouchableOpacity onPress={handlePlayVoice} style={styles.playBtn}>
+              {isPlayingVoice
+                ? <Pause size={18} color={Colors.primary} />
+                : <Play size={18} color={Colors.primary} />}
+            </TouchableOpacity>
           </View>
-        )}
+          {isPlayingVoice && (
+            <View style={styles.waveformRow}>
+              {[...Array(12)].map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.waveBar,
+                    { height: 8 + ((i * 7) % 20) },
+                  ]}
+                />
+              ))}
+            </View>
+          )}
+        </View>
 
         {/* ── Specifications ── */}
         <View style={[styles.card, Shadows.soft]}>
@@ -211,7 +256,7 @@ export default function CropDetails() {
             {isUrdu ? 'تفصیلات' : 'Specifications'}
           </Text>
           <View style={styles.specGrid}>
-            {cropData.specifications.map((spec, index) => (
+            {specifications.map((spec, index) => (
               <View key={index} style={styles.specCell}>
                 <Text style={styles.specLabel}>{spec.label}</Text>
                 <Text style={styles.specValue}>{spec.value}</Text>
@@ -231,12 +276,12 @@ export default function CropDetails() {
               <Text style={styles.farmerAvatarText}>{monogram}</Text>
             </View>
             <View style={styles.farmerInfo}>
-              <Text style={styles.farmerName}>{cropData.farmer.name}</Text>
+              <Text style={styles.farmerName}>{cropFarmerName}</Text>
               <View style={styles.ratingRow}>
                 <Star size={13} color={Colors.warning} fill={Colors.warning} />
-                <Text style={styles.ratingText}>{cropData.farmer.rating}</Text>
+                <Text style={styles.ratingText}>4.9</Text>
                 <Text style={styles.reviewCount}>
-                  ({cropData.farmer.totalReviews} {isUrdu ? 'ریویوز' : 'reviews'})
+                  (28 {isUrdu ? 'ریویوز' : 'reviews'})
                 </Text>
               </View>
             </View>
@@ -249,12 +294,12 @@ export default function CropDetails() {
           <View style={styles.farmerMeta}>
             <View style={styles.farmerMetaItem}>
               <Text style={styles.farmerMetaLabel}>{isUrdu ? 'ممبر' : 'Member since'}</Text>
-              <Text style={styles.farmerMetaValue}>{cropData.farmer.memberSince}</Text>
+              <Text style={styles.farmerMetaValue}>2023</Text>
             </View>
             <View style={styles.farmerMetaDivider} />
             <View style={styles.farmerMetaItem}>
               <Text style={styles.farmerMetaLabel}>{isUrdu ? 'مکمل فروخت' : 'Completed sales'}</Text>
-              <Text style={styles.farmerMetaValue}>{cropData.farmer.completedSales}</Text>
+              <Text style={styles.farmerMetaValue}>142</Text>
             </View>
           </View>
 
@@ -278,8 +323,8 @@ export default function CropDetails() {
           <Text style={styles.cardTitle}>
             {isUrdu ? 'موجودہ بولیاں' : 'Current Bids'}
           </Text>
-          {cropData.currentBids.map((bid, index) => (
-            <View key={index} style={[styles.bidRow, index < cropData.currentBids.length - 1 && styles.bidRowBorder]}>
+          {currentBids.map((bid, index) => (
+            <View key={index} style={[styles.bidRow, index < currentBids.length - 1 && styles.bidRowBorder]}>
               <View style={styles.bidLeft}>
                 <View style={styles.bidRank}>
                   <Text style={styles.bidRankText}>{index + 1}</Text>

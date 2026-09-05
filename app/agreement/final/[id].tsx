@@ -17,7 +17,7 @@ import { finalizeAndGenerateAgreement, generateAgreementHTML } from '@/services/
 import { Button } from '@/components/ui/Button';
 import { useLanguage } from '@/services/i18n/languageContext';
 import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
-import { VoiceGuidanceBar } from '@/components/ui/VoiceGuidanceBar';
+import { VoiceCircleButton } from '@/components/ui/VoiceCircleButton';
 import { generateAgreementAudioSummaryUrdu } from '@/services/voice/speechService';
 import { CheckCircle2, ShieldCheck, FileText, ArrowLeft, X } from 'lucide-react-native';
 
@@ -113,8 +113,9 @@ export default function FinalAgreementScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* LANGUAGE SWITCHER */}
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 12 }}>
+      {/* TOP HEADER CONTROLS */}
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <VoiceCircleButton text={finalSpeechSummary} autoPlay size={38} />
         <LanguageSwitcherButton compact />
       </View>
 
@@ -129,14 +130,6 @@ export default function FinalAgreementScreen() {
             ? 'دونوں فریقین نے بائیو میٹرک توثیق مکمل کر کے تمام شرائط منظور کر لی ہیں۔'
             : 'Both parties have biometrically verified and digitally confirmed all transaction terms.'}
         </Text>
-      </View>
-
-      {/* Voice Guidance for Final Agreement */}
-      <View style={{ marginBottom: 14 }}>
-        <VoiceGuidanceBar
-          text={finalSpeechSummary}
-          label={isUrdu ? 'حتمی معاہدے کی تفصیل آواز میں سنیں' : 'Listen Final Agreement Audio'}
-        />
       </View>
 
       {/* AGREEMENT DETAILS CARD */}

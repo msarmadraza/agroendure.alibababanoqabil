@@ -234,7 +234,20 @@ export default function CropBrowser() {
               <CropCard
                 key={crop.id}
                 {...crop}
-                onViewDetails={() => router.push('/crop-details')}
+                onViewDetails={() => {
+                  const imgUri = typeof crop.image === 'object' && crop.image?.uri ? crop.image.uri : undefined;
+                  router.push({
+                    pathname: '/crop-details',
+                    params: {
+                      id: crop.id,
+                      imageUri: imgUri,
+                      title: crop.title,
+                      price: String(crop.price),
+                      quantity: crop.quantity,
+                      location: crop.location,
+                    },
+                  });
+                }}
                 onPlayVoice={() => console.log('Play voice:', crop.id)}
               />
             ))}
