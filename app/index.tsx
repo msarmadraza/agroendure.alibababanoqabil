@@ -68,6 +68,8 @@ const SLIDES = [
   {
     id: 'voice-market',
     image: require('@/assets/onboarding-slide-1.png'),
+    bgColor: '#FFFFFF',
+    theme: 'light' as const,
     title: 'Your Voice, Our Market',
     titleUrdu: 'کسان کی آواز، ترقی کی بنیاد',
     subtitle: 'Voice-first crop trading for farmers in Urdu, Punjabi & regional languages.',
@@ -77,6 +79,8 @@ const SLIDES = [
   {
     id: 'speak-price',
     image: require('@/assets/onboarding-slide-2.jpg'),
+    bgColor: '#1C1917',
+    theme: 'dark' as const,
     title: 'Speak Your Price',
     titleUrdu: 'اپنی زبان، اپنی قیمت',
     subtitle: 'Direct fair pricing powered by smart AI crop listing.',
@@ -86,6 +90,8 @@ const SLIDES = [
   {
     id: 'source-direct',
     image: require('@/assets/onboarding-slide-3.jpg'),
+    bgColor: '#181411',
+    theme: 'dark' as const,
     title: 'Source Direct, Deal Smart',
     titleUrdu: 'براہ راست خریداری، سمجھدار سودا',
     subtitle: 'Verified trades, transparent mandi rates, and direct agreements.',
@@ -111,11 +117,15 @@ export default function OnboardingFlow() {
   const [step, setStep] = useState<OnboardingStep>('slides');
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const isDesktopWeb = Platform.OS === 'web' && windowWidth > 480;
-  const fullSlideWidth = isDesktopWeb ? 420 : windowWidth;
+  const viewportHeight = isDesktopWeb ? Math.min(windowHeight * 0.94, 860) : windowHeight;
+  const fullSlideWidth = isDesktopWeb ? Math.min(420, Math.max(340, viewportHeight * 0.52)) : windowWidth;
 
   const [slideIndex, setSlideIndex] = useState(0);
   const slideIndexRef = useRef(0);
   slideIndexRef.current = slideIndex;
+
+  const currentSlide = SLIDES[slideIndex] || SLIDES[0];
+  const isDarkSlide = currentSlide.theme === 'dark';
 
   const translateX = useRef(new Animated.Value(0)).current;
 
@@ -142,6 +152,12 @@ export default function OnboardingFlow() {
       goToSlide(slideIndex + 1);
     } else {
       setStep('role');
+    }
+  };
+
+  const goToPrevSlide = () => {
+    if (slideIndex > 0) {
+      goToSlide(slideIndex - 1);
     }
   };
 
@@ -458,53 +474,42 @@ export default function OnboardingFlow() {
           styles.fullScreenViewport,
           {
             width: fullSlideWidth,
-            height: isDesktopWeb ? Math.min(windowHeight * 0.94, 880) : '100%',
+            height: isDesktopWeb ? viewportHeight : '100%',
             borderRadius: isDesktopWeb ? 36 : 0,
             borderWidth: isDesktopWeb ? 2 : 0,
             borderColor: isDesktopWeb ? '#334155' : 'transparent',
+            backgroundColor: currentSlide.bgColor,
           },
         ]}
-        {...panResponder.panHandlers}
       >
-        {/* Animated Sliding Track */}
-        <Animated.View
-          style={[
-            styles.fullScreenTrack,
-            {
-              width: fullSlideWidth * SLIDES.length,
-              transform: [{ translateX }],
-            },
-          ]}
-        >
-          {SLIDES.map((slide) => (
-            <View key={slide.id} style={[styles.fullSlideItem, { width: fullSlideWidth }]}>
-              <Image
-                source={slide.image}
-                style={StyleSheet.absoluteFillObject}
-                resizeMode="cover"
-              />
-            </View>
-          ))}
-        </Animated.View>
-
-        {/* Floating Top Header directly on top of the slide */}
-        <SafeAreaView style={styles.slideFloatingHeader} edges={['top']}>
+        {/* Top Header - Sits cleanly above the poster without covering it */}
+        <SafeAreaView style={styles.slideTopHeader} edges={['top']}>
           <View style={styles.slideHeaderContent}>
-            <View style={styles.headerSideActionGlass}>
-              <Image
-                source={require('@/assets/agroendure-icon.png')}
-                style={{ width: 28, height: 28 }}
-                resizeMode="contain"
-              />
+            <View style={[styles.headerSideActionGlass, isDarkSlide && styles.headerSideActionGlassDark]}>
+              {slideIndex > 0 ? (
+                <TouchableOpacity
+                  onPress={goToPrevSlide}
+                  style={styles.headerIconButton}
+                  activeOpacity={0.8}
+                >
+                  <ArrowLeft size={18} color={isDarkSlide ? '#FFFFFF' : Colors.foreground} />
+                </TouchableOpacity>
+              ) : (
+                <Image
+                  source={require('@/assets/agroendure-icon.png')}
+                  style={{ width: 22, height: 22 }}
+                  resizeMode="contain"
+                />
+              )}
             </View>
 
-            <View style={styles.slideBadgeGlass}>
-              <Text style={styles.slideBadgeText}>
+            <View style={[styles.slideBadgeGlass, isDarkSlide && styles.slideBadgeGlassDark]}>
+              <Text style={[styles.slideBadgeText, isDarkSlide && styles.slideBadgeTextDark]}>
                 {slideIndex + 1} / {SLIDES.length}
               </Text>
             </View>
 
-            <View style={styles.headerSideActionGlass}>
+            <View style={[styles.headerSideActionGlass, isDarkSlide && styles.headerSideActionGlassDark]}>
               <VoiceCircleButton
                 text={onboardingVoiceScript}
                 autoPlay
@@ -514,8 +519,37 @@ export default function OnboardingFlow() {
           </View>
         </SafeAreaView>
 
-        {/* Floating Bottom Action Area directly ON the slide */}
-        <SafeAreaView style={styles.slideFloatingFooter} edges={['bottom']}>
+        {/* Middle Sliding Carousel Area - Posters fit 100% with resizeMode="contain" */}
+        <View style={styles.carouselMiddleArea} {...panResponder.panHandlers}>
+          <Animated.View
+            style={[
+              styles.fullScreenTrack,
+              {
+                width: fullSlideWidth * SLIDES.length,
+                transform: [{ translateX }],
+              },
+            ]}
+          >
+            {SLIDES.map((slide) => (
+              <View
+                key={slide.id}
+                style={[
+                  styles.fullSlideItem,
+                  { width: fullSlideWidth, backgroundColor: slide.bgColor },
+                ]}
+              >
+                <Image
+                  source={slide.image}
+                  style={styles.slidePosterImageFit}
+                  resizeMode="contain"
+                />
+              </View>
+            ))}
+          </Animated.View>
+        </View>
+
+        {/* Bottom Action Footer - Sits cleanly below the poster without covering it */}
+        <SafeAreaView style={styles.slideBottomFooter} edges={['bottom']}>
           <View style={styles.slideFooterContent}>
             {/* Pagination Dots */}
             <View style={styles.slideDotsRowOnSlide}>
@@ -526,13 +560,15 @@ export default function OnboardingFlow() {
                   activeOpacity={0.7}
                   style={[
                     styles.slideDotOnSlide,
-                    slideIndex === i ? styles.slideDotActiveOnSlide : styles.slideDotInactiveOnSlide,
+                    slideIndex === i
+                      ? styles.slideDotActiveOnSlide
+                      : (isDarkSlide ? styles.slideDotInactiveDark : styles.slideDotInactiveLight),
                   ]}
                 />
               ))}
             </View>
 
-            {/* Green Pill Button directly ON the slide */}
+            {/* Green Pill Button directly at downside of slide */}
             <TouchableOpacity
               style={styles.greenPillButtonOnSlide}
               onPress={goToNextSlide}
@@ -548,11 +584,11 @@ export default function OnboardingFlow() {
 
             {/* Skip Direct Link */}
             <TouchableOpacity
-              style={styles.skipLinkButtonOnSlide}
+              style={[styles.skipLinkButtonOnSlide, isDarkSlide && styles.skipLinkButtonDark]}
               onPress={goToDashboard}
               activeOpacity={0.7}
             >
-              <Text style={styles.skipLinkTextOnSlide}>
+              <Text style={[styles.skipLinkTextOnSlide, isDarkSlide && styles.skipLinkTextDark]}>
                 {isUrdu ? 'ڈیش بورڈ دیکھیں • براہ راست داخل ہوں' : 'Explore Dashboard • Direct Entry'}
               </Text>
             </TouchableOpacity>
@@ -1155,9 +1191,76 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   fullScreenViewport: {
+    flexDirection: 'column',
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: '#000',
+  },
+  slideTopHeader: {
+    width: '100%',
+    zIndex: 10,
+  },
+  slideHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.xs,
+    paddingBottom: Spacing.xs,
+    minHeight: 46,
+  },
+  headerSideActionGlass: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  headerSideActionGlassDark: {
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  headerIconButton: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  slideBadgeGlass: {
+    backgroundColor: 'rgba(241, 245, 249, 0.95)',
+    paddingHorizontal: 16,
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  slideBadgeGlassDark: {
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  slideBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  slideBadgeTextDark: {
+    color: '#FFFFFF',
+  },
+  carouselMiddleArea: {
+    flex: 1,
+    width: '100%',
+    overflow: 'hidden',
   },
   fullScreenTrack: {
     flexDirection: 'row',
@@ -1165,74 +1268,29 @@ const styles = StyleSheet.create({
   },
   fullSlideItem: {
     height: '100%',
-    position: 'relative',
-    backgroundColor: '#000',
-  },
-  slideFloatingHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 20,
-  },
-  slideHeaderContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    minHeight: 48,
-  },
-  headerSideActionGlass: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  slideBadgeGlass: {
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.6)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+  slidePosterImageFit: {
+    width: '100%',
+    height: '100%',
   },
-  slideBadgeText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#15803D',
-  },
-  slideFloatingFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 20,
+  slideBottomFooter: {
+    width: '100%',
+    zIndex: 10,
   },
   slideFooterContent: {
     paddingHorizontal: Spacing.xl,
-    paddingBottom: Spacing.xl,
-    paddingTop: Spacing.md,
-    gap: Spacing.sm,
+    paddingBottom: Spacing.md,
+    paddingTop: Spacing.xs,
+    gap: 8,
   },
   slideDotsRowOnSlide: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginBottom: Spacing.xs,
+    marginBottom: 4,
   },
   slideDotOnSlide: {
     height: 6,
@@ -1240,20 +1298,22 @@ const styles = StyleSheet.create({
   },
   slideDotActiveOnSlide: {
     width: 28,
-    backgroundColor: '#22C55E',
-    shadowColor: '#22C55E',
+    backgroundColor: '#15803D',
+    shadowColor: '#15803D',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   },
-  slideDotInactiveOnSlide: {
+  slideDotInactiveLight: {
     width: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    borderWidth: 0.5,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: '#CBD5E1',
+  },
+  slideDotInactiveDark: {
+    width: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
   },
   greenPillButtonOnSlide: {
-    height: 56,
+    height: 52,
     backgroundColor: '#15803D',
     borderRadius: Radius.full,
     flexDirection: 'row',
@@ -1261,16 +1321,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.sm,
     paddingHorizontal: Spacing.xl,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
+    shadowColor: '#15803D',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowRadius: 8,
+    elevation: 5,
     borderWidth: 1.5,
     borderColor: '#22C55E',
   },
   greenPillButtonText: {
-    fontSize: FontSize.lg,
+    fontSize: FontSize.md + 1,
     fontWeight: '800',
     color: Colors.white,
     letterSpacing: 0.3,
@@ -1278,20 +1338,22 @@ const styles = StyleSheet.create({
   skipLinkButtonOnSlide: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
-    backgroundColor: 'rgba(0, 0, 0, 0.32)',
-    borderRadius: Radius.full,
+    paddingVertical: 4,
     alignSelf: 'center',
+  },
+  skipLinkButtonDark: {
+    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    borderRadius: Radius.full,
     paddingHorizontal: Spacing.md,
-    marginTop: 2,
+    paddingVertical: 5,
   },
   skipLinkTextOnSlide: {
-    fontSize: FontSize.sm,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    fontSize: FontSize.xs + 1,
+    fontWeight: '600',
+    color: Colors.mutedForeground,
+  },
+  skipLinkTextDark: {
+    color: 'rgba(255, 255, 255, 0.88)',
   },
 
   // Role
