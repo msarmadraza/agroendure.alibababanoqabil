@@ -1,52 +1,101 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { CheckCircle2, Clock, AlertCircle, AlertTriangle } from 'lucide-react-native';
 import { TermStatus } from '@/types/database';
 
 interface BadgeProps {
   status: TermStatus | string;
   label?: string;
   style?: ViewStyle;
+  showIcon?: boolean;
 }
 
-export const Badge: React.FC<BadgeProps> = ({ status, label, style }) => {
-  const getBadgeStyle = () => {
+export const Badge: React.FC<BadgeProps> = ({ status, label, style, showIcon = true }) => {
+  const getBadgeConfig = () => {
     switch (status) {
       case 'agreed':
       case 'confirmed':
-        return { bg: '#D1E7DD', text: '#0F5132', defaultLabel: '✓ Agreed' };
+        return {
+          bg: '#ECFDF5',
+          border: '#A7F3D0',
+          text: '#065F46',
+          icon: <CheckCircle2 size={11} color="#059669" />,
+          defaultLabel: 'باہمی طے شدہ • Agreed',
+        };
       case 'proposed':
-        return { bg: '#CFE2FF', text: '#084298', defaultLabel: 'Proposed' };
       case 'negotiating':
-        return { bg: '#FFF3CD', text: '#664D03', defaultLabel: '⏳ Negotiating' };
+        return {
+          bg: '#FFFBEB',
+          border: '#FDE68A',
+          text: '#92400E',
+          icon: <Clock size={11} color="#D97706" />,
+          defaultLabel: 'زیرِ بحث • Proposed',
+        };
       case 'missing':
-        return { bg: '#F8D7DA', text: '#842029', defaultLabel: '⚠ Missing' };
+        return {
+          bg: '#FEF2F2',
+          border: '#FECACA',
+          text: '#991B1B',
+          icon: <AlertCircle size={11} color="#DC2626" />,
+          defaultLabel: 'درکار • Missing',
+        };
       case 'conflicting':
-        return { bg: '#F8D7DA', text: '#842029', defaultLabel: '⚡ Conflict' };
+        return {
+          bg: '#FEF2F2',
+          border: '#FECACA',
+          text: '#991B1B',
+          icon: <AlertTriangle size={11} color="#DC2626" />,
+          defaultLabel: 'تضاد • Conflict',
+        };
       case 'rejected':
-        return { bg: '#E2E3E5', text: '#41464B', defaultLabel: 'Rejected' };
+        return {
+          bg: '#F1F5F9',
+          border: '#E2E8F0',
+          text: '#475569',
+          icon: <AlertCircle size={11} color="#64748B" />,
+          defaultLabel: 'مسترد • Rejected',
+        };
       default:
-        return { bg: '#E9ECEF', text: '#495057', defaultLabel: status };
+        return {
+          bg: '#F8FAFC',
+          border: '#E2E8F0',
+          text: '#334155',
+          icon: null,
+          defaultLabel: status,
+        };
     }
   };
 
-  const { bg, text, defaultLabel } = getBadgeStyle();
+  const config = getBadgeConfig();
 
   return (
-    <View style={[styles.badge, { backgroundColor: bg }, style]}>
-      <Text style={[styles.text, { color: text }]}>{label || defaultLabel}</Text>
+    <View
+      style={[
+        styles.badge,
+        { backgroundColor: config.bg, borderColor: config.border },
+        style,
+      ]}
+    >
+      {showIcon && config.icon}
+      <Text style={[styles.text, { color: config.text }]}>{label || config.defaultLabel}</Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
+    borderWidth: 1,
     alignSelf: 'flex-start',
   },
   text: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
 });

@@ -184,7 +184,7 @@ export default function FinalAgreementScreen() {
       <Modal visible={showPreviewModal} animationType="slide" onRequestClose={() => setShowPreviewModal(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>📄 Official Agreement Document</Text>
+            <Text style={styles.modalTitle}>Official Agreement Document</Text>
             <TouchableOpacity onPress={() => setShowPreviewModal(false)} style={styles.closeBtn}>
               <X size={20} color="#1A202C" />
             </TouchableOpacity>
@@ -193,7 +193,7 @@ export default function FinalAgreementScreen() {
           <ScrollView style={styles.documentBody}>
             <View style={styles.docBorder}>
               <View style={styles.docHeader}>
-                <Text style={styles.docLogo}>🌾 AgroEndure</Text>
+                <Text style={styles.docLogo}>AgroEndure</Text>
                 <Text style={styles.docBadge}>DIGITALLY CONFIRMED</Text>
               </View>
 

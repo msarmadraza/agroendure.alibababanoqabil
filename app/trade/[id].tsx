@@ -324,7 +324,7 @@ export default function TradeChatScreen() {
             activeOpacity={0.7}
           >
             <FileText size={15} color="#1b4332" />
-            <Text style={styles.reviewNavBtnText}>معاہدہ تیار کریں 📋</Text>
+            <Text style={styles.reviewNavBtnText}>معاہدے کا جائزہ</Text>
           </TouchableOpacity>
         </View>
 

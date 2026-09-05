@@ -5,7 +5,7 @@ import { KNOWN_AGREEMENT_FIELDS } from '@/types/agreement';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { TermItem } from './TermItem';
 import { SuggestedQuestions } from './SuggestedQuestions';
-import { Bot, ChevronDown, ChevronUp, AlertCircle, CheckCircle2, AlertTriangle, FileText } from 'lucide-react-native';
+import { Bot, ChevronDown, ChevronUp, AlertCircle, CheckCircle2, AlertTriangle, FileText, Clock } from 'lucide-react-native';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -79,7 +79,7 @@ export const AIAssistantCard: React.FC<AIAssistantCardProps> = ({
               {conflictingTerms.map((t) => (
                 <View key={t.id} style={styles.conflictItem}>
                   <Text style={styles.conflictField}>
-                    ⚠ {KNOWN_AGREEMENT_FIELDS[t.field_name] || t.field_name}
+                    {KNOWN_AGREEMENT_FIELDS[t.field_name] || t.field_name}
                   </Text>
                   <Text style={styles.conflictDetail}>Current Candidate Value: {String(t.value)}</Text>
                 </View>
@@ -109,7 +109,10 @@ export const AIAssistantCard: React.FC<AIAssistantCardProps> = ({
           {/* PENDING / NEGOTIATING */}
           {pendingTerms.length > 0 && (
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: '#664D03' }]}>⏳ PENDING / NEGOTIATING</Text>
+              <View style={styles.sectionTitleRow}>
+                <Clock size={15} color="#B45309" />
+                <Text style={[styles.sectionTitle, { color: '#92400E' }]}>PENDING / UNDER DISCUSSION</Text>
+              </View>
               {pendingTerms.map((t) => (
                 <TermItem key={t.id} term={t} />
               ))}
@@ -120,12 +123,12 @@ export const AIAssistantCard: React.FC<AIAssistantCardProps> = ({
           {actualMissingFields.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionTitleRow}>
-                <AlertTriangle size={15} color="#842029" />
-                <Text style={[styles.sectionTitle, { color: '#842029' }]}>MISSING INFORMATION</Text>
+                <AlertTriangle size={15} color="#991B1B" />
+                <Text style={[styles.sectionTitle, { color: '#991B1B' }]}>REQUIRED INFORMATION</Text>
               </View>
               {actualMissingFields.map((field, idx) => (
                 <View key={idx} style={styles.missingRow}>
-                  <Text style={styles.missingText}>⚠ {KNOWN_AGREEMENT_FIELDS[field] || field}</Text>
+                  <Text style={styles.missingText}>{KNOWN_AGREEMENT_FIELDS[field] || field}</Text>
                 </View>
               ))}
             </View>

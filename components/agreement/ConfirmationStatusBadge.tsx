@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { CheckCircle2, Clock, ShieldCheck, User } from 'lucide-react-native';
+import { CheckCircle2, Clock, User, ShieldCheck } from 'lucide-react-native';
 
 interface ConfirmationStatusBadgeProps {
   roleLabel: string;
@@ -21,51 +21,61 @@ export const ConfirmationStatusBadge: React.FC<ConfirmationStatusBadgeProps> = (
 }) => {
   return (
     <View style={[styles.container, isConfirmed ? styles.confirmedBox : styles.pendingBox]}>
-      {/* Top row with Role & You tag */}
+      {/* Top Header: Role & "You" Indicator */}
       <View style={styles.topRow}>
         <View style={styles.roleContainer}>
-          <View style={styles.roleHeaderRow}>
+          <View style={styles.roleTitleRow}>
             <Text style={styles.roleLabel}>{roleLabel}</Text>
-            {roleSubLabel && <Text style={styles.roleSubLabel}>({roleSubLabel})</Text>}
+            {roleSubLabel && <Text style={styles.roleSubLabel}>• {roleSubLabel}</Text>}
           </View>
-          {partyName && <Text style={styles.partyName} numberOfLines={1}>{partyName}</Text>}
+          {partyName && (
+            <Text style={styles.partyName} numberOfLines={1}>
+              {partyName}
+            </Text>
+          )}
         </View>
 
         {isCurrentUser && (
           <View style={styles.youBadge}>
             <User size={10} color="#15803D" />
-            <Text style={styles.youBadgeText}>آپ (You)</Text>
+            <Text style={styles.youBadgeText}>آپ • You</Text>
           </View>
         )}
       </View>
 
-      {/* Status indicator row */}
-      <View style={styles.statusRow}>
+      {/* Verification Status Pill */}
+      <View style={styles.statusSection}>
         {isConfirmed ? (
           <View style={styles.badgeConfirmed}>
-            <ShieldCheck size={14} color="#15803D" />
-            <View>
-              <Text style={styles.badgeConfirmedTitle}>بائیو میٹرک توثیق شدہ</Text>
-              <Text style={styles.badgeConfirmedSubtitle}>Digitally Verified & Signed</Text>
+            <ShieldCheck size={14} color="#059669" />
+            <View style={styles.statusTextCol}>
+              <Text style={styles.badgeConfirmedTitle}>ڈیجیٹل توثیق شدہ</Text>
+              <Text style={styles.badgeConfirmedSub}>Verified & Signed</Text>
             </View>
           </View>
         ) : (
           <View style={styles.badgePending}>
-            <Clock size={14} color="#B45309" />
-            <View>
-              <Text style={styles.badgePendingTitle}>توثیق زیرِ التواء ہے</Text>
-              <Text style={styles.badgePendingSubtitle}>Pending Verification</Text>
+            <Clock size={14} color="#D97706" />
+            <View style={styles.statusTextCol}>
+              <Text style={styles.badgePendingTitle}>توثیق زیرِ التواء</Text>
+              <Text style={styles.badgePendingSub}>Awaiting Signature</Text>
             </View>
           </View>
         )}
       </View>
 
-      {/* Timestamp */}
-      {isConfirmed && confirmedAt && (
-        <Text style={styles.timestamp}>
-          دستخط وقت: {new Date(confirmedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text>
-      )}
+      {/* Signature Timestamp Footer */}
+      <View style={styles.footerRow}>
+        {isConfirmed && confirmedAt ? (
+          <Text style={styles.timestampConfirmed}>
+            دستخط وقت: {new Date(confirmedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        ) : (
+          <Text style={styles.timestampPending}>
+            دستخط کا انتظار ہے
+          </Text>
+        )}
+      </View>
     </View>
   );
 };
@@ -74,14 +84,14 @@ const styles = StyleSheet.create({
   container: {
     padding: 12,
     borderRadius: 12,
-    borderWidth: 1.5,
+    borderWidth: 1,
     flex: 1,
     justifyContent: 'space-between',
-    minHeight: 110,
+    minHeight: 120,
   },
   confirmedBox: {
     backgroundColor: '#F0FDF4',
-    borderColor: '#86EFAC',
+    borderColor: '#A7F3D0',
   },
   pendingBox: {
     backgroundColor: '#FFFBEB',
@@ -97,11 +107,10 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 4,
   },
-  roleHeaderRow: {
+  roleTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    flexWrap: 'wrap',
   },
   roleLabel: {
     fontSize: 14,
@@ -125,7 +134,7 @@ const styles = StyleSheet.create({
     gap: 3,
     backgroundColor: '#DCFCE7',
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 2.5,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#86EFAC',
@@ -135,8 +144,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#15803D',
   },
-  statusRow: {
-    marginTop: 4,
+  statusSection: {
+    marginVertical: 4,
   },
   badgeConfirmed: {
     flexDirection: 'row',
@@ -144,18 +153,21 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: '#DCFCE7',
     paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingVertical: 5,
+    borderRadius: 7,
+  },
+  statusTextCol: {
+    flex: 1,
   },
   badgeConfirmedTitle: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#14532D',
+    color: '#065F46',
   },
-  badgeConfirmedSubtitle: {
+  badgeConfirmedSub: {
     fontSize: 9,
     fontWeight: '600',
-    color: '#166534',
+    color: '#047857',
   },
   badgePending: {
     flexDirection: 'row',
@@ -163,23 +175,30 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: '#FEF3C7',
     paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingVertical: 5,
+    borderRadius: 7,
   },
   badgePendingTitle: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#78350F',
-  },
-  badgePendingSubtitle: {
-    fontSize: 9,
-    fontWeight: '600',
     color: '#92400E',
   },
-  timestamp: {
-    fontSize: 10,
-    color: '#15803D',
+  badgePendingSub: {
+    fontSize: 9,
     fontWeight: '600',
+    color: '#B45309',
+  },
+  footerRow: {
     marginTop: 6,
+  },
+  timestampConfirmed: {
+    fontSize: 10,
+    color: '#047857',
+    fontWeight: '600',
+  },
+  timestampPending: {
+    fontSize: 10,
+    color: '#B45309',
+    fontWeight: '500',
   },
 });
