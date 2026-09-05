@@ -57,26 +57,36 @@ import { VOICE_SCRIPTS } from '@/services/voice/speechService';
 
 type OnboardingStep = 'slides' | 'role' | 'language' | 'cnic' | 'face' | 'phone';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const SLIDE_CONTENT_WIDTH = Math.min(SCREEN_WIDTH - 32, 440);
 
 const SLIDES = [
   {
-    icon: Mic,
-    title: 'آواز سے فصل کی فہرست بنائیں',
-    subtitle: 'بٹن دبائیں اور آسان اردو میں اپنی فصل بتائیں',
-    color: Colors.primary,
+    id: 'voice-market',
+    image: require('@/assets/onboarding-slide-1.png'),
+    title: 'Your Voice, Our Market',
+    titleUrdu: 'کسان کی آواز، ترقی کی بنیاد',
+    subtitle: 'Voice-first crop trading for farmers in Urdu, Punjabi & regional languages.',
+    subtitleUrdu: 'اپنی زبان میں بول کر فصل کی خرید و فروخت کریں۔',
+    voiceScript: 'ایگرو اینڈور میں خوش آمدید! کسان کی آواز ترقی کی بنیاد ہے۔ اپنی مادری زبان میں بول کر فصل کی خرید و فروخت کریں۔ اگلا مرحلہ دبائیں۔',
   },
   {
-    icon: Handshake,
-    title: 'AI کی مدد سے بہترین قیمت حاصل کریں',
-    subtitle: 'سمارٹ مذاکرات سے منافع بڑھائیں',
-    color: Colors.blue500,
+    id: 'speak-price',
+    image: require('@/assets/onboarding-slide-2.jpg'),
+    title: 'Speak Your Price',
+    titleUrdu: 'اپنی زبان، اپنی قیمت',
+    subtitle: 'Direct fair pricing powered by smart AI crop listing.',
+    subtitleUrdu: 'اب مڈل مین کے بغیر اپنی فصل کی منصفانہ قیمت حاصل کریں۔',
+    voiceScript: 'اپنی زبان، اپنی قیمت! اب مڈل مین کے بغیر اپنی فصل کی منصفانہ قیمت حاصل کریں اور خریداروں سے براہ راست بولیاں وصول کریں۔ اگلا مرحلہ دبائیں۔',
   },
   {
-    icon: ShieldCheck,
-    title: 'محفوظ اور قابل اعتماد مارکیٹ پلیس',
-    subtitle: 'تصدیق شدہ خریداروں اور بیچنے والوں کے ساتھ تجارت کریں',
-    color: Colors.success,
+    id: 'source-direct',
+    image: require('@/assets/onboarding-slide-3.jpg'),
+    title: 'Source Direct, Deal Smart',
+    titleUrdu: 'براہ راست خریداری، سمجھدار سودا',
+    subtitle: 'Verified trades, transparent mandi rates, and direct agreements.',
+    subtitleUrdu: 'منڈی کے شفاف ریٹس اور تصدیق شدہ کسانوں اور خریداروں کے ساتھ محفوظ ڈیجیٹل معاہدے کریں۔ شروع کرنے کے لیے بٹن دبائیں۔',
+    voiceScript: 'براہ راست خریداری، سمجھدار سودا! منڈی کے شفاف ریٹس اور تصدیق شدہ کسانوں اور خریداروں کے ساتھ محفوظ ڈیجیٹل معاہدے کریں۔ شروع کرنے کے لیے بٹن دبائیں۔',
   },
 ];
 
@@ -125,13 +135,17 @@ export default function OnboardingFlow() {
   // --- Slides ---
   const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offsetX / SCREEN_WIDTH);
-    setSlideIndex(index);
+    const index = Math.round(offsetX / SLIDE_CONTENT_WIDTH);
+    if (index >= 0 && index < SLIDES.length) {
+      setSlideIndex(index);
+    }
   }, []);
 
   const goToNextSlide = () => {
     if (slideIndex < SLIDES.length - 1) {
-      scrollRef.current?.scrollTo({ x: (slideIndex + 1) * SCREEN_WIDTH, animated: true });
+      const nextIdx = slideIndex + 1;
+      setSlideIndex(nextIdx);
+      scrollRef.current?.scrollTo({ x: nextIdx * SLIDE_CONTENT_WIDTH, animated: true });
     } else {
       setStep('role');
     }
@@ -351,79 +365,120 @@ export default function OnboardingFlow() {
     }
   };
 
+  // Registration steps
+  const registrationSteps: OnboardingStep[] = ['role', 'language', 'cnic', 'face', 'phone'];
+
   // --- Progress Stepper Header ---
-  const renderDots = () => (
-    <View style={styles.stepperContainer}>
-      <View style={styles.stepperBars}>
-        {steps.map((s, i) => {
-          const isCurrent = currentIndex === i;
-          const isCompleted = currentIndex > i;
-          return (
-            <View
-              key={s}
-              style={[
-                styles.stepperBar,
-                isCurrent && styles.stepperBarActive,
-                isCompleted && styles.stepperBarCompleted,
-              ]}
-            />
-          );
-        })}
+  const renderDots = () => {
+    if (step === 'slides') {
+      return (
+        <View style={styles.stepperContainer}>
+          <View style={styles.stepBadge}>
+            <Text style={styles.stepBadgeText}>
+              {slideIndex + 1} / {SLIDES.length}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    const regIndex = registrationSteps.indexOf(step);
+    return (
+      <View style={styles.stepperContainer}>
+        <View style={styles.stepperBars}>
+          {registrationSteps.map((s, i) => {
+            const isCurrent = regIndex === i;
+            const isCompleted = regIndex > i;
+            return (
+              <View
+                key={s}
+                style={[
+                  styles.stepperBar,
+                  isCurrent && styles.stepperBarActive,
+                  isCompleted && styles.stepperBarCompleted,
+                ]}
+              />
+            );
+          })}
+        </View>
+        <View style={styles.stepBadge}>
+          <Text style={styles.stepBadgeText}>
+            {regIndex + 1} / {registrationSteps.length}
+          </Text>
+        </View>
       </View>
-      <View style={styles.stepBadge}>
-        <Text style={styles.stepBadgeText}>
-          {currentIndex + 1} / {steps.length}
-        </Text>
-      </View>
-    </View>
-  );
+    );
+  };
 
   // ===== RENDER: Slides =====
   const renderSlides = () => (
-    <View style={styles.flex}>
+    <View style={styles.slidesWrapper}>
       <ScrollView
         ref={scrollRef}
         horizontal
-        pagingEnabled
+        pagingEnabled={Platform.OS === 'ios'}
+        snapToInterval={SLIDE_CONTENT_WIDTH}
+        decelerationRate="fast"
         showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
-        scrollEventThrottle={200}
+        scrollEventThrottle={16}
+        contentContainerStyle={styles.slidesScrollContainer}
       >
-        {SLIDES.map((slide, i) => (
-          <View key={i} style={[styles.slideContainer, { width: SCREEN_WIDTH }]}>
-            <View style={[styles.slideIconWrapper, { backgroundColor: `${slide.color}15` }]}>
-              <slide.icon size={52} color={slide.color} />
+        {SLIDES.map((slide) => (
+          <View key={slide.id} style={[styles.slideItem, { width: SLIDE_CONTENT_WIDTH }]}>
+            <View style={styles.slidePosterFrame}>
+              <Image
+                source={slide.image}
+                style={styles.slidePosterImage}
+                resizeMode="cover"
+              />
             </View>
-            <Text style={styles.slideTitle}>{slide.title}</Text>
-            <Text style={styles.slideSubtitle}>{slide.subtitle}</Text>
           </View>
         ))}
       </ScrollView>
 
-      <View style={styles.slideDots}>
+      {/* Slide Pagination Dots */}
+      <View style={styles.slideDotsRow}>
         {SLIDES.map((_, i) => (
-          <View
+          <TouchableOpacity
             key={i}
+            onPress={() => {
+              setSlideIndex(i);
+              scrollRef.current?.scrollTo({ x: i * SLIDE_CONTENT_WIDTH, animated: true });
+            }}
+            activeOpacity={0.7}
             style={[
               styles.slideDot,
-              slideIndex === i && styles.slideDotActive,
+              slideIndex === i ? styles.slideDotActive : styles.slideDotInactive,
             ]}
           />
         ))}
       </View>
 
-      <View style={styles.slideActions}>
-        <TouchableOpacity style={styles.primaryButton} onPress={goToNextSlide} activeOpacity={0.88}>
-          <Text style={styles.primaryButtonText}>
-            {slideIndex < SLIDES.length - 1 ? 'اگلا مرحلہ • Next' : 'شروع کریں • Get Started'}
+      {/* Action Buttons */}
+      <View style={styles.slideActionsContainer}>
+        <TouchableOpacity
+          style={styles.greenPillButton}
+          onPress={goToNextSlide}
+          activeOpacity={0.88}
+        >
+          <Text style={styles.greenPillButtonText}>
+            {slideIndex < SLIDES.length - 1
+              ? (isUrdu ? 'اگلا مرحلہ • Next' : 'Next • اگلا مرحلہ')
+              : (isUrdu ? 'شروع کریں • Get Started' : 'Get Started • شروع کریں')}
           </Text>
-          <ArrowRight size={20} color={Colors.white} />
+          <ArrowRight size={20} color={Colors.white} strokeWidth={2.5} />
         </TouchableOpacity>
-        {slideIndex === 0 && (
-          <TouchableOpacity style={styles.demoButton} onPress={goToDashboard}>
-            <Text style={styles.demoButtonText}>ڈیش بورڈ دیکھیں • Explore Dashboard</Text>
-          </TouchableOpacity>
-        )}
+
+        <TouchableOpacity
+          style={styles.skipLinkButton}
+          onPress={goToDashboard}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.skipLinkText}>
+            {isUrdu ? 'ڈیش بورڈ دیکھیں • براہ راست داخل ہوں' : 'Explore Dashboard • Direct Entry'}
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -858,7 +913,7 @@ export default function OnboardingFlow() {
 
   const onboardingVoiceScript =
     step === 'slides'
-      ? VOICE_SCRIPTS.onboardingSlides
+      ? SLIDES[slideIndex]?.voiceScript || VOICE_SCRIPTS.onboardingSlides
       : step === 'role'
       ? VOICE_SCRIPTS.onboardingRole
       : step === 'language'
@@ -881,7 +936,11 @@ export default function OnboardingFlow() {
                   <ArrowLeft size={20} color={Colors.foreground} />
                 </TouchableOpacity>
               ) : (
-                <View style={{ width: 40, height: 40 }} />
+                <Image
+                  source={require('@/assets/agroendure-icon.png')}
+                  style={{ width: 32, height: 32 }}
+                  resizeMode="contain"
+                />
               )}
             </View>
             {renderDots()}
@@ -1012,53 +1071,96 @@ const styles = StyleSheet.create({
   },
 
   // Slides
-  slideContainer: {
+  slidesWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    width: '100%',
+  },
+  slidesScrollContainer: {
+    alignItems: 'center',
+  },
+  slideItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.xxxl,
+    paddingVertical: Spacing.xs,
   },
-  slideIconWrapper: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.xl,
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
+  slidePosterFrame: {
+    height: Math.min(SCREEN_HEIGHT * 0.58, 510),
+    aspectRatio: 576 / 1024,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: Colors.white,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    alignSelf: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  slideTitle: {
-    fontSize: FontSize.xxl,
-    fontWeight: '800',
-    color: Colors.foreground,
-    textAlign: 'center',
-    marginBottom: Spacing.sm,
+  slidePosterImage: {
+    width: '100%',
+    height: '100%',
   },
-  slideSubtitle: {
-    fontSize: FontSize.md,
-    color: Colors.mutedForeground,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  slideDots: {
+  slideDotsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.sm,
-    marginVertical: Spacing.lg,
+    gap: 8,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
   },
   slideDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.border,
+    height: 6,
+    borderRadius: 3,
   },
   slideDotActive: {
-    width: 24,
-    backgroundColor: Colors.primary,
+    width: 28,
+    backgroundColor: '#15803D',
   },
-  slideActions: {
-    gap: Spacing.md,
+  slideDotInactive: {
+    width: 8,
+    backgroundColor: '#CBD5E1',
+  },
+  slideActionsContainer: {
+    width: '100%',
+    maxWidth: 440,
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  greenPillButton: {
+    height: 54,
+    backgroundColor: '#15803D',
+    borderRadius: Radius.full,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    shadowColor: '#15803D',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#166534',
+  },
+  greenPillButtonText: {
+    fontSize: FontSize.lg,
+    fontWeight: '800',
+    color: Colors.white,
+    letterSpacing: 0.3,
+  },
+  skipLinkButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.xs,
+  },
+  skipLinkText: {
+    fontSize: FontSize.sm + 1,
+    fontWeight: '600',
+    color: Colors.mutedForeground,
   },
 
   // Role
