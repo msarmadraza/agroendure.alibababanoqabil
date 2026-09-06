@@ -61,6 +61,20 @@ function fallbackImageFor(cropName: string): any {
   return match ? match.image : require('@/assets/wheat-field.jpg');
 }
 
+function extractCity(text: string): string {
+  const t = text.toLowerCase();
+  if (t.includes('فیصل آباد') || t.includes('faisalabad')) return 'فیصل آباد';
+  if (t.includes('لاہور') || t.includes('lahore')) return 'لاہور';
+  if (t.includes('ملتان') || t.includes('multan')) return 'ملتان';
+  if (t.includes('گجرانوالہ') || t.includes('گوجرانوالہ') || t.includes('gujranwala')) return 'گوجرانوالہ';
+  if (t.includes('سیالکوٹ') || t.includes('sialkot')) return 'سیالکوٹ';
+  if (t.includes('رحیم یار خان') || t.includes('rahim yar khan')) return 'رحیم یار خان';
+  if (t.includes('بہاولپور') || t.includes('bahawalpur')) return 'بہاولپور';
+  if (t.includes('سرگودھا') || t.includes('sargodha')) return 'سرگودھا';
+  if (t.includes('پنجاب') || t.includes('punjab')) return 'پنجاب';
+  return 'پاکستان';
+}
+
 /**
  * Converts a Listing (live Supabase row, locally created, or mock)
  * into the view shape used by the marketplace CropCard.
@@ -74,7 +88,7 @@ export function listingToCropCard(listing: Listing): CropCardView {
     price: Number(listing.price),
     currency: listing.currency || 'PKR',
     quantity: `${listing.quantity} ${UNIT_URDU[listing.quantity_unit] ?? listing.quantity_unit}`,
-    location: 'پاکستان',
+    location: (listing as any).location || extractCity(`${listing.title} ${listing.description || ''}`),
     timeAgo: timeAgoUrdu(listing.created_at),
     image: firstImage?.public_url
       ? { uri: firstImage.public_url }
@@ -85,3 +99,4 @@ export function listingToCropCard(listing: Listing): CropCardView {
     isAvailable: listing.status === 'active',
   };
 }
+

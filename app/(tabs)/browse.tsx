@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,15 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import {
-  Search,
-  MapPin,
-  List,
-  Grid2x2,
-  SlidersHorizontal,
-  X,
-  ChevronDown,
-} from 'lucide-react-native';
+import { Search, X, SlidersHorizontal, RotateCcw, MapPin, ArrowUpDown } from 'lucide-react-native';
 import { CropCard } from '@/components/CropCard';
 import { fetchListings } from '@/services/marketplace/listingService';
 import { listingToCropCard, CropCardView } from '@/services/marketplace/listingAdapter';
@@ -29,11 +21,19 @@ import { LanguageSwitcherButton } from '@/components/ui/LanguageSwitcherButton';
 export default function CropBrowser() {
   const router = useRouter();
   const { t, isUrdu } = useLanguage();
+
+  // Search & Category
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedLocation, setSelectedLocation] = useState('all');
+
+  // Filter Section State
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState('all');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc'>('newest');
+
+  // Data State
   const [crops, setCrops] = useState<CropCardView[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -51,30 +51,97 @@ export default function CropBrowser() {
     loadListings();
   }, [loadListings]);
 
+  // Main Category Filters
   const categories = [
-    { id: 'all', label: t('browse.allCategories'), count: 156 },
-    { id: 'grains', label: t('browse.grains'), count: 89 },
-    { id: 'vegetables', label: t('browse.vegetables'), count: 42 },
-    { id: 'fruits', label: t('browse.fruits'), count: 25 },
+    { id: 'all', label: isUrdu ? 'تمام فصلیں' : 'All Crops' },
+    { id: 'wheat', label: isUrdu ? 'گندم' : 'Wheat' },
+    { id: 'rice', label: isUrdu ? 'چاول' : 'Rice' },
+    { id: 'cotton', label: isUrdu ? 'کپاس' : 'Cotton' },
+    { id: 'sugarcane', label: isUrdu ? 'گنا' : 'Sugarcane' },
+    { id: 'corn', label: isUrdu ? 'مکئی' : 'Corn' },
   ];
 
-  const locations = [
-    { id: 'all', name: t('browse.allRegions') },
-    { id: 'faisalabad', name: isUrdu ? 'فیصل آباد' : 'Faisalabad' },
-    { id: 'lahore', name: isUrdu ? 'لاہور' : 'Lahore' },
-    { id: 'multan', name: isUrdu ? 'ملتان' : 'Multan' },
-    { id: 'sialkot', name: isUrdu ? 'سیالکوٹ' : 'Sialkot' },
+  // Regions for Filter Section
+  const regions = [
+    { id: 'all', label: isUrdu ? 'تمام علاقے' : 'All Regions' },
+    { id: 'faisalabad', label: isUrdu ? 'فیصل آباد' : 'Faisalabad' },
+    { id: 'lahore', label: isUrdu ? 'لاہور' : 'Lahore' },
+    { id: 'multan', label: isUrdu ? 'ملتان' : 'Multan' },
+    { id: 'gujranwala', label: isUrdu ? 'گوجرانوالہ' : 'Gujranwala' },
+    { id: 'sialkot', label: isUrdu ? 'سیالکوٹ' : 'Sialkot' },
+    { id: 'rahim_yar_khan', label: isUrdu ? 'رحیم یار خان' : 'Rahim Yar Khan' },
   ];
 
-  const filteredCrops = crops.filter((crop) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.trim().toLowerCase();
-    return (
-      crop.title.toLowerCase().includes(q) ||
-      crop.farmerName.toLowerCase().includes(q) ||
-      crop.quantity.toLowerCase().includes(q)
-    );
-  });
+  // Active custom filters count (in the filter section)
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (selectedRegion !== 'all') count += 1;
+    if (minPrice.trim() !== '') count += 1;
+    if (maxPrice.trim() !== '') count += 1;
+    if (sortBy !== 'newest') count += 1;
+    return count;
+  }, [selectedRegion, minPrice, maxPrice, sortBy]);
+
+  const resetFilters = () => {
+    setSelectedRegion('all');
+    setMinPrice('');
+    setMaxPrice('');
+    setSortBy('newest');
+  };
+
+  const filteredCrops = useMemo(() => {
+    let result = crops.filter((crop) => {
+      // 1. Search Query
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const matches =
+          crop.title.toLowerCase().includes(q) ||
+          crop.farmerName.toLowerCase().includes(q) ||
+          crop.location.toLowerCase().includes(q) ||
+          crop.quantity.toLowerCase().includes(q);
+        if (!matches) return false;
+      }
+
+      // 2. Category Filter
+      if (selectedCategory !== 'all') {
+        const tLower = crop.title.toLowerCase();
+        if (selectedCategory === 'wheat' && !tLower.includes('گندم') && !tLower.includes('wheat')) return false;
+        if (selectedCategory === 'rice' && !tLower.includes('چاول') && !tLower.includes('rice') && !tLower.includes('basmati')) return false;
+        if (selectedCategory === 'cotton' && !tLower.includes('کپاس') && !tLower.includes('cotton')) return false;
+        if (selectedCategory === 'sugarcane' && !tLower.includes('گنا') && !tLower.includes('sugarcane')) return false;
+        if (selectedCategory === 'corn' && !tLower.includes('مکئی') && !tLower.includes('corn') && !tLower.includes('maize')) return false;
+      }
+
+      // 3. Region Filter
+      if (selectedRegion !== 'all') {
+        const locLower = (crop.location + ' ' + crop.title).toLowerCase();
+        if (selectedRegion === 'faisalabad' && !locLower.includes('faisalabad') && !locLower.includes('فیصل آباد')) return false;
+        if (selectedRegion === 'lahore' && !locLower.includes('lahore') && !locLower.includes('لاہور')) return false;
+        if (selectedRegion === 'multan' && !locLower.includes('multan') && !locLower.includes('ملتان')) return false;
+        if (selectedRegion === 'gujranwala' && !locLower.includes('gujranwala') && !locLower.includes('گوجرانوالہ') && !locLower.includes('گجرانوالہ')) return false;
+        if (selectedRegion === 'sialkot' && !locLower.includes('sialkot') && !locLower.includes('سیالکوٹ')) return false;
+        if (selectedRegion === 'rahim_yar_khan' && !locLower.includes('rahim') && !locLower.includes('رحیم یار خان')) return false;
+      }
+
+      // 4. Price Range
+      const min = parseFloat(minPrice);
+      if (!isNaN(min) && crop.price < min) return false;
+
+      const max = parseFloat(maxPrice);
+      if (!isNaN(max) && crop.price > max) return false;
+
+      return true;
+    });
+
+    // 5. Sorting
+    if (sortBy === 'price_asc') {
+      result.sort((a, b) => a.price - b.price);
+    } else if (sortBy === 'price_desc') {
+      result.sort((a, b) => b.price - a.price);
+    }
+
+    return result;
+  }, [crops, searchQuery, selectedCategory, selectedRegion, minPrice, maxPrice, sortBy]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -94,27 +161,32 @@ export default function CropBrowser() {
           </View>
           <View style={styles.headerActions}>
             <LanguageSwitcherButton compact />
+            {/* Filter Toggle Button */}
             <TouchableOpacity
-              style={styles.iconBtn}
-              onPress={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              style={[
+                styles.filterToggleBtn,
+                (showFilters || activeFiltersCount > 0) && styles.filterToggleBtnActive,
+              ]}
+              onPress={() => setShowFilters((prev) => !prev)}
+              activeOpacity={0.8}
             >
-              {viewMode === 'grid'
-                ? <List size={18} color={Colors.foreground} />
-                : <Grid2x2 size={18} color={Colors.foreground} />}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.iconBtn, showFilters && styles.iconBtnActive]}
-              onPress={() => setShowFilters(!showFilters)}
-            >
-              <SlidersHorizontal size={18} color={showFilters ? Colors.primary : Colors.foreground} />
+              <SlidersHorizontal
+                size={18}
+                color={showFilters || activeFiltersCount > 0 ? Colors.primary : Colors.foreground}
+              />
+              {activeFiltersCount > 0 && (
+                <View style={styles.filterBadge}>
+                  <Text style={styles.filterBadgeText}>{activeFiltersCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* ── Search ── */}
+        {/* ── Search Bar ── */}
         <View style={styles.searchRow}>
           <View style={styles.searchBox}>
-            <Search size={16} color={Colors.mutedForeground} />
+            <Search size={18} color={Colors.mutedForeground} />
             <TextInput
               style={styles.searchInput}
               value={searchQuery}
@@ -124,13 +196,13 @@ export default function CropBrowser() {
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <X size={16} color={Colors.mutedForeground} />
+                <X size={18} color={Colors.mutedForeground} />
               </TouchableOpacity>
             )}
           </View>
         </View>
 
-        {/* ── Category Chips ── */}
+        {/* ── Single Category Filter Bar (No Collisions) ── */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -143,79 +215,164 @@ export default function CropBrowser() {
                 key={cat.id}
                 onPress={() => setSelectedCategory(cat.id)}
                 style={[styles.chip, active && styles.chipActive]}
+                activeOpacity={0.8}
               >
                 <Text style={[styles.chipText, active && styles.chipTextActive]}>
                   {cat.label}
                 </Text>
-                <View style={[styles.chipBadge, active && styles.chipBadgeActive]}>
-                  <Text style={[styles.chipBadgeText, active && styles.chipBadgeTextActive]}>
-                    {cat.count}
-                  </Text>
-                </View>
               </TouchableOpacity>
             );
           })}
         </ScrollView>
 
-        {/* ── Location Filter ── */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.locRow}
-        >
-          {locations.map((loc) => {
-            const active = selectedLocation === loc.id;
-            return (
-              <TouchableOpacity
-                key={loc.id}
-                onPress={() => setSelectedLocation(loc.id)}
-                style={[styles.locChip, active && styles.locChipActive]}
-              >
-                <MapPin size={12} color={active ? Colors.primary : Colors.mutedForeground} />
-                <Text style={[styles.locText, active && styles.locTextActive]}>
-                  {loc.name}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {/* ── Filters Panel ── */}
+        {/* ── Filter Section Panel (Expandable) ── */}
         {showFilters && (
           <View style={[styles.filterCard, Shadows.soft]}>
-            <Text style={styles.filterTitle}>{t('browse.filters')}</Text>
-
-            <View style={styles.filterField}>
-              <Text style={styles.filterLabel}>{t('browse.region')}</Text>
-              <View style={styles.filterSelect}>
-                <Text style={styles.filterSelectText}>
-                  {locations.find((l) => l.id === selectedLocation)?.name}
+            <View style={styles.filterCardHeader}>
+              <View style={styles.filterHeaderLeft}>
+                <SlidersHorizontal size={16} color={Colors.primary} />
+                <Text style={styles.filterCardTitle}>
+                  {isUrdu ? 'فلٹرز' : 'Filters'}
                 </Text>
-                <ChevronDown size={14} color={Colors.mutedForeground} />
+                {activeFiltersCount > 0 && (
+                  <View style={styles.activeTag}>
+                    <Text style={styles.activeTagText}>
+                      {activeFiltersCount} {isUrdu ? 'منتخب' : 'active'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.filterHeaderActions}>
+                {activeFiltersCount > 0 && (
+                  <TouchableOpacity
+                    style={styles.resetTextBtn}
+                    onPress={resetFilters}
+                  >
+                    <RotateCcw size={12} color={Colors.mutedForeground} />
+                    <Text style={styles.resetText}>
+                      {isUrdu ? 'صاف کریں' : 'Reset'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={styles.closeFilterBtn}
+                  onPress={() => setShowFilters(false)}
+                >
+                  <X size={18} color={Colors.mutedForeground} />
+                </TouchableOpacity>
               </View>
             </View>
 
-            <View style={styles.filterField}>
-              <Text style={styles.filterLabel}>{t('browse.priceRange')}</Text>
-              <View style={styles.priceRange}>
-                <TextInput
-                  style={styles.priceInput}
-                  placeholder={t('browse.minPrice')}
-                  placeholderTextColor={Colors.mutedForeground}
-                  keyboardType="number-pad"
-                />
-                <Text style={styles.priceSep}>—</Text>
-                <TextInput
-                  style={styles.priceInput}
-                  placeholder={t('browse.maxPrice')}
-                  placeholderTextColor={Colors.mutedForeground}
-                  keyboardType="number-pad"
-                />
+            {/* Region / Location Filter */}
+            <View style={styles.filterGroup}>
+              <View style={styles.groupHeader}>
+                <MapPin size={14} color={Colors.primary} />
+                <Text style={styles.filterGroupLabel}>
+                  {isUrdu ? 'علاقہ منتخب کریں' : 'Select Region'}
+                </Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterOptionPills}
+              >
+                {regions.map((reg) => {
+                  const active = selectedRegion === reg.id;
+                  return (
+                    <TouchableOpacity
+                      key={reg.id}
+                      style={[styles.filterPill, active && styles.filterPillActive]}
+                      onPress={() => setSelectedRegion(reg.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.filterPillText, active && styles.filterPillTextActive]}>
+                        {reg.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* Price Range Filter */}
+            <View style={styles.filterGroup}>
+              <Text style={styles.filterGroupLabel}>
+                {isUrdu ? 'قیمت کی حد (روپے)' : 'Price Range (PKR)'}
+              </Text>
+              <View style={styles.priceRow}>
+                <View style={styles.priceInputWrapper}>
+                  <Text style={styles.pricePrefix}>Min</Text>
+                  <TextInput
+                    style={styles.priceInput}
+                    value={minPrice}
+                    onChangeText={setMinPrice}
+                    placeholder="10,000"
+                    placeholderTextColor={Colors.mutedForeground}
+                    keyboardType="number-pad"
+                  />
+                </View>
+                <Text style={styles.priceDivider}>—</Text>
+                <View style={styles.priceInputWrapper}>
+                  <Text style={styles.pricePrefix}>Max</Text>
+                  <TextInput
+                    style={styles.priceInput}
+                    value={maxPrice}
+                    onChangeText={setMaxPrice}
+                    placeholder="100,000"
+                    placeholderTextColor={Colors.mutedForeground}
+                    keyboardType="number-pad"
+                  />
+                </View>
               </View>
             </View>
 
-            <TouchableOpacity style={styles.applyBtn}>
-              <Text style={styles.applyBtnText}>{t('browse.applyFilters')}</Text>
+            {/* Sorting */}
+            <View style={styles.filterGroup}>
+              <View style={styles.groupHeader}>
+                <ArrowUpDown size={14} color={Colors.primary} />
+                <Text style={styles.filterGroupLabel}>
+                  {isUrdu ? 'ترتیب دیں' : 'Sort By'}
+                </Text>
+              </View>
+              <View style={styles.sortRow}>
+                <TouchableOpacity
+                  style={[styles.sortPill, sortBy === 'newest' && styles.sortPillActive]}
+                  onPress={() => setSortBy('newest')}
+                >
+                  <Text style={[styles.sortPillText, sortBy === 'newest' && styles.sortPillTextActive]}>
+                    {isUrdu ? 'تازہ ترین' : 'Newest'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.sortPill, sortBy === 'price_asc' && styles.sortPillActive]}
+                  onPress={() => setSortBy('price_asc')}
+                >
+                  <Text style={[styles.sortPillText, sortBy === 'price_asc' && styles.sortPillTextActive]}>
+                    {isUrdu ? 'قیمت: کم سے زیادہ' : 'Price: Low to High'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.sortPill, sortBy === 'price_desc' && styles.sortPillActive]}
+                  onPress={() => setSortBy('price_desc')}
+                >
+                  <Text style={[styles.sortPillText, sortBy === 'price_desc' && styles.sortPillTextActive]}>
+                    {isUrdu ? 'قیمت: زیادہ سے کم' : 'Price: High to Low'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Apply Action */}
+            <TouchableOpacity
+              style={styles.applyFilterBtn}
+              onPress={() => setShowFilters(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.applyFilterBtnText}>
+                {isUrdu ? 'فلٹر لاگو کریں' : 'Apply Filters'}
+                {activeFiltersCount > 0 ? ` (${activeFiltersCount})` : ''}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -255,8 +412,15 @@ export default function CropBrowser() {
               <View style={styles.emptyBox}>
                 <Search size={32} color={Colors.mutedForeground} />
                 <Text style={styles.emptyText}>
-                  {isUrdu ? 'کوئی نتیجہ نہیں' : 'No listings found'}
+                  {isUrdu ? 'کوئی نتیجہ نہیں ملا' : 'No listings found'}
                 </Text>
+                {activeFiltersCount > 0 && (
+                  <TouchableOpacity style={styles.clearBtnInline} onPress={resetFilters}>
+                    <Text style={styles.clearBtnInlineText}>
+                      {isUrdu ? 'تمام فلٹرز ختم کریں' : 'Clear All Filters'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>
@@ -282,13 +446,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
     paddingBottom: 100,
-    gap: Spacing.lg,
+    gap: Spacing.md,
   },
   // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
   },
   title: {
     fontSize: FontSize.xxl,
@@ -304,22 +469,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    paddingTop: 4,
   },
-  iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+  filterToggleBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: Radius.md,
     backgroundColor: Colors.muted,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    position: 'relative',
   },
-  iconBtnActive: {
+  filterToggleBtnActive: {
     backgroundColor: Colors.primaryBg,
+    borderColor: Colors.primary,
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.full,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  filterBadgeText: {
+    color: Colors.white,
+    fontSize: 9,
+    fontWeight: '800',
   },
   // Search
   searchRow: {
-    marginTop: -Spacing.xs,
+    marginBottom: 2,
   },
   searchBox: {
     flexDirection: 'row',
@@ -337,21 +522,23 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.foreground,
   },
-  // Chips
+  // Clean Single Chips Row (Zero Collision)
   chipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.sm,
+    paddingVertical: 4,
     paddingRight: Spacing.lg,
   },
   chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 8,
     borderRadius: Radius.full,
     backgroundColor: Colors.muted,
     borderWidth: 1,
     borderColor: Colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   chipActive: {
     backgroundColor: Colors.primary,
@@ -364,55 +551,9 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: Colors.white,
-  },
-  chipBadge: {
-    backgroundColor: Colors.border,
-    borderRadius: Radius.full,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-  },
-  chipBadgeActive: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-  },
-  chipBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: Colors.mutedForeground,
-  },
-  chipBadgeTextActive: {
-    color: Colors.white,
-  },
-  // Location chips
-  locRow: {
-    gap: Spacing.sm,
-    paddingRight: Spacing.lg,
-    marginTop: -Spacing.sm,
-  },
-  locChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.background,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  locChipActive: {
-    backgroundColor: Colors.primaryBg,
-    borderColor: Colors.primary,
-  },
-  locText: {
-    fontSize: FontSize.xs,
-    color: Colors.mutedForeground,
-    fontWeight: '500',
-  },
-  locTextActive: {
-    color: Colors.primary,
     fontWeight: '700',
   },
-  // Filter Panel
+  // Filter Section Panel
   filterCard: {
     backgroundColor: Colors.card,
     borderRadius: Radius.xl,
@@ -421,67 +562,171 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     gap: Spacing.md,
   },
-  filterTitle: {
+  filterCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: Spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  filterHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  filterCardTitle: {
     fontSize: FontSize.md,
     fontWeight: '700',
     color: Colors.foreground,
   },
-  filterField: {
-    gap: Spacing.xs,
+  activeTag: {
+    backgroundColor: Colors.primaryBg,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: Radius.full,
   },
-  filterLabel: {
-    fontSize: FontSize.sm,
-    fontWeight: '600',
-    color: Colors.foreground,
+  activeTagText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.primary,
   },
-  filterSelect: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.lg,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    backgroundColor: Colors.muted,
-  },
-  filterSelectText: {
-    fontSize: FontSize.md,
-    color: Colors.foreground,
-  },
-  priceRange: {
+  filterHeaderActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
   },
-  priceInput: {
-    flex: 1,
+  resetTextBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  resetText: {
+    fontSize: FontSize.xs,
+    color: Colors.mutedForeground,
+    fontWeight: '600',
+  },
+  closeFilterBtn: {
+    padding: 4,
+  },
+  filterGroup: {
+    gap: Spacing.xs,
+  },
+  groupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  filterGroupLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    color: Colors.foreground,
+  },
+  filterOptionPills: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+    paddingVertical: 2,
+  },
+  filterPill: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.background,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: Radius.lg,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
+  },
+  filterPillActive: {
+    backgroundColor: Colors.primaryBg,
+    borderColor: Colors.primary,
+  },
+  filterPillText: {
+    fontSize: FontSize.xs,
+    color: Colors.mutedForeground,
+    fontWeight: '500',
+  },
+  filterPillTextActive: {
+    color: Colors.primary,
+    fontWeight: '700',
+  },
+  // Price Range
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  priceInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.muted,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: Spacing.sm,
+  },
+  pricePrefix: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+    color: Colors.mutedForeground,
+    marginRight: 4,
+  },
+  priceInput: {
+    flex: 1,
+    height: 40,
     fontSize: FontSize.sm,
     color: Colors.foreground,
-    backgroundColor: Colors.muted,
   },
-  priceSep: {
+  priceDivider: {
+    fontSize: FontSize.md,
     color: Colors.mutedForeground,
   },
-  applyBtn: {
+  // Sort
+  sortRow: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+  },
+  sortPill: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sortPillActive: {
+    backgroundColor: Colors.primaryBg,
+    borderColor: Colors.primary,
+  },
+  sortPillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.mutedForeground,
+  },
+  sortPillTextActive: {
+    color: Colors.primary,
+    fontWeight: '700',
+  },
+  // Apply Button
+  applyFilterBtn: {
     backgroundColor: Colors.primary,
     borderRadius: Radius.lg,
-    paddingVertical: 14,
+    paddingVertical: 12,
     alignItems: 'center',
+    marginTop: Spacing.xs,
   },
-  applyBtnText: {
+  applyFilterBtnText: {
     color: Colors.white,
-    fontSize: FontSize.md,
+    fontSize: FontSize.sm,
     fontWeight: '700',
   },
   // Listings
   listings: {
-    gap: Spacing.md,
+    gap: Spacing.lg,
+    marginTop: Spacing.xs,
   },
   loadingBox: {
     alignItems: 'center',
@@ -501,12 +746,25 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.mutedForeground,
   },
+  clearBtnInline: {
+    marginTop: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primaryBg,
+  },
+  clearBtnInlineText: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
   refreshBtn: {
     paddingVertical: 14,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.lg,
     alignItems: 'center',
+    marginTop: Spacing.sm,
   },
   refreshText: {
     fontSize: FontSize.md,
@@ -514,3 +772,4 @@ const styles = StyleSheet.create({
     color: Colors.foreground,
   },
 });
+
